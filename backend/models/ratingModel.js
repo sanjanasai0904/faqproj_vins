@@ -38,6 +38,75 @@ async function updateChatLogFeedback(logId, feedbackText) {
 }
 
 /**
+ * Get a chat log entry by ID
+ * @param {number} logId - Chat log ID
+ * @returns {Promise<Object|null>} Chat log row or null
+ */
+async function getChatLogById(logId) {
+    const query = `
+        SELECT id, question, answer, rating, feedback_text, created_at
+        FROM chat_logs
+        WHERE id = $1
+    `;
+    const result = await pool.query(query, [logId]);
+    return result.rows.length > 0 ? result.rows[0] : null;
+}
+
+/**
+ * Add feedback text to a rating summary row.
+ * @param {number} summaryId - Rating summary ID
+ * @param {number} rating - Star rating tied to the feedback
+ * @param {string} feedbackText - Feedback text
+ */
+async function addFeedbackToRatingSummary(summaryId, rating, feedbackText) {
+    const getCurrentQuery = 'SELECT feedback_list FROM faq_rating_summary WHERE id = $1';
+    const current = await pool.query(getCurrentQuery, [summaryId]);
+
+    if (current.rows.length === 0) {
+        return 0;
+    }
+
+    const feedbackList = current.rows[0].feedback_list || [];
+    feedbackList.push({
+        feedback_text: feedbackText,
+        rating: rating,
+        created_at: new Date().toISOString()
+    });
+
+    const updateQuery = `
+        UPDATE faq_rating_summary
+        SET feedback_list = $1, updated_at = NOW()
+        WHERE id = $2
+    `;
+    const result = await pool.query(updateQuery, [JSON.stringify(feedbackList), summaryId]);
+    return result.rowCount;
+}
+
+/**
+ * Add feedback to the latest summary row with the same representative question.
+ * Used as a compatibility fallback for clients that only send logId.
+ * @param {string} question - Chat log question
+ * @param {number} rating - Star rating tied to the feedback
+ * @param {string} feedbackText - Feedback text
+ */
+async function addFeedbackToMatchingRatingSummary(question, rating, feedbackText) {
+    const matchQuery = `
+        SELECT id
+        FROM faq_rating_summary
+        WHERE representative_question = $1
+        ORDER BY updated_at DESC
+        LIMIT 1
+    `;
+    const match = await pool.query(matchQuery, [question]);
+
+    if (match.rows.length === 0) {
+        return 0;
+    }
+
+    return addFeedbackToRatingSummary(match.rows[0].id, rating, feedbackText);
+}
+
+/**
  * Find the most similar question in faq_rating_summary
  * @param {Array<number>} embedding - Question embedding vector
  * @param {number} threshold - Similarity threshold (default 0.50)
@@ -297,6 +366,9 @@ async function getTopPriorityRatings(limit = 10) {
 module.exports = {
     createChatLog,
     updateChatLogFeedback,
+    getChatLogById,
+    addFeedbackToRatingSummary,
+    addFeedbackToMatchingRatingSummary,
     findSimilarQuestion,
     updateRatingSummary,
     createRatingSummary,

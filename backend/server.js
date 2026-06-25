@@ -11,6 +11,8 @@ require('dotenv').config();
 const faqRoutes = require('./routes/faqRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
+const faqFeedbackRoutes = require('./routes/faqFeedbackRoutes');
+const faqFeedbackModel = require('./models/faqFeedbackModel');
 
 // Initialize Express app
 const app = express();
@@ -24,6 +26,12 @@ app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 app.use('/api', faqRoutes);
 app.use('/api', chatRoutes);
 app.use('/api', feedbackRoutes);
+app.use('/api', faqFeedbackRoutes);
+
+// Auto-create faq_feedback table if it doesn't exist
+faqFeedbackModel.createTableIfNotExists()
+    .then(() => console.log('✅ faq_feedback table ready'))
+    .catch(err => console.error('❌ faq_feedback table init failed:', err.message));
 
 // Health check route
 app.get('/', (req, res) => {

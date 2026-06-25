@@ -373,7 +373,7 @@
                     console.log('✅ Rating submitted successfully');
                     
                     // Show feedback input option
-                    showFeedbackInput(responseId, widget, data.logId);
+                    showFeedbackInput(responseId, widget, data.logId, data.summaryId);
                 } else {
                     throw new Error(data.message || 'Failed to submit rating');
                 }
@@ -390,7 +390,7 @@
         }
 
         // Show optional feedback input
-        function showFeedbackInput(responseId, widget, logId) {
+        function showFeedbackInput(responseId, widget, logId, summaryId) {
             // Remove the rating label and stars
             widget.innerHTML = '';
             
@@ -446,7 +446,7 @@
             submitBtn.addEventListener("click", async () => {
                 const feedbackText = feedbackInput.value.trim();
                 if (feedbackText) {
-                    await submitFeedbackText(logId, feedbackText);
+                    await submitFeedbackText(logId, feedbackText, summaryId);
                 }
                 widget.remove();
             });
@@ -466,7 +466,7 @@
         }
 
         // Submit feedback text
-        async function submitFeedbackText(logId, feedbackText) {
+        async function submitFeedbackText(logId, feedbackText, summaryId) {
             try {
                 console.log('📝 Submitting feedback text...');
                 
@@ -477,7 +477,8 @@
                     },
                     body: JSON.stringify({
                         logId: logId,
-                        feedbackText: feedbackText
+                        feedbackText: feedbackText,
+                        summaryId: summaryId
                     })
                 });
 

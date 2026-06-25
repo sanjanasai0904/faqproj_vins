@@ -190,6 +190,78 @@
             color: var(--accent-color);
         }
 
+        /* ── Thumbs Up/Down Feedback Widget ── */
+        .faq-thumb-widget {
+            margin-top: 1rem;
+            padding-top: 0.85rem;
+            border-top: 1px dashed var(--border-color);
+        }
+        .thumb-prompt-label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.5rem;
+        }
+        .thumb-btn-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .thumb-btn {
+            background: var(--panel-sub);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.35rem 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.82rem;
+        }
+        .thumb-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.15); }
+        .thumb-btn.up:hover:not(:disabled), .thumb-btn.up.selected { background: rgba(16,185,129,0.12); border-color: #10b981; color: #10b981; }
+        .thumb-btn.down:hover:not(:disabled), .thumb-btn.down.selected { background: rgba(239,68,68,0.1); border-color: #ef4444; color: #ef4444; }
+        .thumb-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .thumb-feedback-box { display: none; margin-top: 0.75rem; animation: thumbFadeIn 0.18s ease; }
+        @keyframes thumbFadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+        .thumb-feedback-box.visible { display: block; }
+        .thumb-feedback-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.4rem; }
+        .thumb-feedback-textarea {
+            width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px;
+            border: 1px solid var(--border-color); background: var(--panel-sub);
+            color: var(--text-main); font-size: 0.88rem; resize: vertical;
+            min-height: 64px; outline: none; box-sizing: border-box;
+            font-family: inherit; transition: border-color 0.15s ease;
+        }
+        .thumb-feedback-textarea:focus { border-color: var(--accent-color); }
+        .thumb-feedback-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+        .thumb-submit-btn {
+            background: var(--accent-color); color: white; border: none;
+            padding: 0.38rem 0.9rem; border-radius: 6px; font-size: 0.82rem;
+            font-weight: 700; cursor: pointer; transition: background 0.15s ease;
+        }
+        .thumb-submit-btn:hover:not(:disabled) { background: var(--accent-hover); }
+        .thumb-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .thumb-skip-btn {
+            background: transparent; border: 1px solid var(--border-color);
+            color: var(--text-muted); padding: 0.38rem 0.75rem; border-radius: 6px;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s ease;
+        }
+        .thumb-skip-btn:hover { border-color: var(--text-muted); }
+        .thumb-confirm-msg { display: none; font-size: 0.82rem; font-weight: 600; color: #10b981; margin-top: 0.6rem; animation: thumbFadeIn 0.2s ease; }
+        .thumb-confirm-msg.visible { display: flex; align-items: center; gap: 0.4rem; }
+        @media (max-width: 600px) {
+            .thumb-btn { font-size: 0.78rem; padding: 0.3rem 0.6rem; }
+            .thumb-feedback-actions { flex-direction: column; }
+            .thumb-submit-btn, .thumb-skip-btn { width: 100%; text-align: center; }
+        }
+
         @media (max-width: 900px) {
             .faq-layout-grid {
                 grid-template-columns: 1fr;
@@ -331,6 +403,24 @@
                                     <div class="faq-action-row">
                                         <button class="save-item-btn" onclick="toggleSaveItem('faq-${faq.id}', '${escapedQuestion.replace(/'/g, "\\'")}', '${escapedAnswer.replace(/'/g, "\\'")}', this)">🤍 Save</button>
                                     </div>
+                                    <div class="faq-thumb-widget">
+                                        <div class="thumb-prompt-label">Was this answer helpful?</div>
+                                        <div class="thumb-btn-row">
+                                            <button class="thumb-btn up" id="thumb-up-${faq.id}" onclick="openThumbFeedback(${faq.id}, 'up', this)">👍 Yes</button>
+                                            <button class="thumb-btn down" id="thumb-down-${faq.id}" onclick="openThumbFeedback(${faq.id}, 'down', this)">👎 No</button>
+                                        </div>
+                                        <div class="thumb-feedback-box" id="thumb-box-${faq.id}">
+                                            <div class="thumb-feedback-label" id="thumb-box-label-${faq.id}">Anything you'd like to add?</div>
+                                            <textarea class="thumb-feedback-textarea" id="thumb-text-${faq.id}" placeholder="Type your feedback here..." oninput="onThumbTextInput(${faq.id})"></textarea>
+                                            <div class="thumb-feedback-actions">
+                                                <button class="thumb-submit-btn" id="thumb-submit-${faq.id}" onclick="submitThumbFeedback(${faq.id})">Submit</button>
+                                                <button class="thumb-skip-btn" id="thumb-skip-${faq.id}" onclick="skipThumbFeedback(${faq.id})">Skip</button>
+                                            </div>
+                                        </div>
+                                        <div class="thumb-confirm-msg" id="thumb-confirm-${faq.id}">
+                                            ✅ Thanks for your feedback!
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>`;
@@ -453,6 +543,96 @@
             }, observerOptions);
 
             sections.forEach(sec => observer.observe(sec));
+        }
+
+        // ── Thumbs Up/Down Feedback Logic ─────────────────────────────────────
+        const FAQ_FEEDBACK_API = 'http://localhost:5000/api/faq-feedback';
+        const thumbPendingType = {};
+
+        function openThumbFeedback(faqId, type, btnEl) {
+            const upBtn   = document.getElementById('thumb-up-'   + faqId);
+            const downBtn = document.getElementById('thumb-down-' + faqId);
+            upBtn.classList.remove('selected');
+            downBtn.classList.remove('selected');
+            btnEl.classList.add('selected');
+            thumbPendingType[faqId] = type;
+
+            const box       = document.getElementById('thumb-box-'    + faqId);
+            const label     = document.getElementById('thumb-box-label-' + faqId);
+            const textArea  = document.getElementById('thumb-text-'   + faqId);
+            const submitBtn = document.getElementById('thumb-submit-' + faqId);
+            const skipBtn   = document.getElementById('thumb-skip-'   + faqId);
+            textArea.value = '';
+
+            if (type === 'down') {
+                label.textContent     = 'Please tell us what was wrong (required):';
+                skipBtn.style.display = 'none';
+                submitBtn.disabled    = true;
+            } else {
+                label.textContent     = "Anything you'd like to add? (optional):";
+                skipBtn.style.display = '';
+                submitBtn.disabled    = false;
+            }
+            box.classList.add('visible');
+            textArea.focus();
+            _refreshPanelHeight(box);
+        }
+
+        function onThumbTextInput(faqId) {
+            if (thumbPendingType[faqId] === 'down') {
+                const text = document.getElementById('thumb-text-' + faqId).value.trim();
+                document.getElementById('thumb-submit-' + faqId).disabled = text.length === 0;
+            }
+        }
+
+        async function submitThumbFeedback(faqId) {
+            const type   = thumbPendingType[faqId];
+            const textEl = document.getElementById('thumb-text-' + faqId);
+            const text   = textEl.value.trim() || null;
+            if (type === 'down' && !text) { textEl.focus(); return; }
+            await _postThumbFeedback(faqId, type, text);
+        }
+
+        async function skipThumbFeedback(faqId) {
+            if (thumbPendingType[faqId] !== 'up') return;
+            await _postThumbFeedback(faqId, 'up', null);
+        }
+
+        async function _postThumbFeedback(faqId, type, text) {
+            const submitBtn = document.getElementById('thumb-submit-' + faqId);
+            const skipBtn   = document.getElementById('thumb-skip-'   + faqId);
+            if (submitBtn) submitBtn.disabled = true;
+            if (skipBtn)   skipBtn.disabled   = true;
+            try {
+                const resp = await fetch(FAQ_FEEDBACK_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ faq_id: parseInt(faqId, 10), type, text })
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) throw new Error(data.message || 'Submission failed');
+                _showThumbConfirmation(faqId);
+            } catch (err) {
+                console.error('FAQ feedback error:', err);
+                if (submitBtn) submitBtn.disabled = false;
+                if (skipBtn)   skipBtn.disabled   = false;
+                alert('Could not save feedback. Please try again.');
+            }
+        }
+
+        function _showThumbConfirmation(faqId) {
+            const box     = document.getElementById('thumb-box-'     + faqId);
+            const confirm = document.getElementById('thumb-confirm-' + faqId);
+            box.classList.remove('visible');
+            confirm.classList.add('visible');
+            document.getElementById('thumb-up-'   + faqId).disabled = true;
+            document.getElementById('thumb-down-' + faqId).disabled = true;
+            _refreshPanelHeight(confirm);
+        }
+
+        function _refreshPanelHeight(innerEl) {
+            const panel = innerEl.closest('.faq-accordion-panel');
+            if (panel) panel.style.maxHeight = panel.scrollHeight + 'px';
         }
     </script>
     <script src="theme.js"></script>

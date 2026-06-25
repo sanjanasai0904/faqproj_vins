@@ -167,7 +167,7 @@ async function submitRating(req, res) {
  */
 async function updateFeedbackText(req, res) {
     try {
-        const { logId, feedbackText } = req.body;
+        const { logId, feedbackText, summaryId } = req.body;
         
         if (!logId || !Number.isInteger(logId)) {
             return res.status(400).json({
@@ -186,12 +186,34 @@ async function updateFeedbackText(req, res) {
         console.log(`📝 Updating feedback text for log ID: ${logId}`);
         
         await ratingModel.updateChatLogFeedback(logId, feedbackText);
+
+        const chatLog = await ratingModel.getChatLogById(logId);
+        if (!chatLog) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rating log not found'
+            });
+        }
+
+        let updatedSummaryCount = 0;
+        if (Number.isInteger(summaryId)) {
+            updatedSummaryCount = await ratingModel.addFeedbackToRatingSummary(summaryId, chatLog.rating, feedbackText);
+        }
+
+        if (updatedSummaryCount === 0) {
+            updatedSummaryCount = await ratingModel.addFeedbackToMatchingRatingSummary(
+                chatLog.question,
+                chatLog.rating,
+                feedbackText
+            );
+        }
         
-        console.log(`✅ Feedback text updated successfully`);
+        console.log(`✅ Feedback text updated successfully; rating summaries updated: ${updatedSummaryCount}`);
         
         return res.status(200).json({
             success: true,
-            message: 'Feedback text updated successfully'
+            message: 'Feedback text updated successfully',
+            summaryUpdated: updatedSummaryCount > 0
         });
         
     } catch (error) {
