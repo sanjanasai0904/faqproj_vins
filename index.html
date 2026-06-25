@@ -262,6 +262,60 @@
             .thumb-submit-btn, .thumb-skip-btn { width: 100%; text-align: center; }
         }
 
+        /* ── Search Bar Styling ── */
+        .faq-search-wrapper {
+            position: relative;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .faq-search-input {
+            width: 100%;
+            padding: 0.85rem 1rem 0.85rem 2.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .faq-search-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .faq-search-icon {
+            position: absolute;
+            left: 1rem;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+
+        .faq-search-clear {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: color 0.2s, background 0.2s;
+        }
+
+        .faq-search-clear:hover {
+            color: var(--text-main);
+            background: var(--panel-sub);
+        }
+
         @media (max-width: 900px) {
             .faq-layout-grid {
                 grid-template-columns: 1fr;
@@ -318,6 +372,12 @@
             </aside>
 
             <main>
+                <div class="faq-search-wrapper">
+                    <span class="faq-search-icon">🔍</span>
+                    <input type="text" id="faqSearchInput" class="faq-search-input" placeholder="Search FAQs..." oninput="handleFaqSearch(this.value)" autocomplete="off">
+                    <button id="faqSearchClearBtn" class="faq-search-clear" onclick="clearFaqSearch()" style="display: none;" aria-label="Clear search">✖</button>
+                </div>
+
                 <div class="faq-control-strip">
                     <button class="control-action-btn" onclick="toggleAllAccordions(true)">↕️ Expand All</button>
                     <button class="control-action-btn" onclick="toggleAllAccordions(false)">📭 Collapse All</button>
@@ -349,98 +409,165 @@
             "Team Formation": { label: "Team Formation", anchor: "sec-team", order: 14 }
         };
 
+        let allFAQsData = [];
+        let searchDebounceTimer = null;
+
         // Fetch and render FAQs dynamically
         async function loadAndRenderFAQs() {
             try {
                 const response = await fetch('http://localhost:5000/api/faqs');
                 const result = await response.json();
-                const faqs = result.data; // backend wraps FAQs in { success: true, data: [...] }
-                
-                // Group FAQs by category
-                const groupedFAQs = {};
-                faqs.forEach(faq => {
-                    if (!groupedFAQs[faq.category]) {
-                        groupedFAQs[faq.category] = [];
-                    }
-                    groupedFAQs[faq.category].push(faq);
-                });
-
-                // Sort categories by order from categoryMap
-                const sortedCategories = Object.keys(groupedFAQs).sort((a, b) => {
-                    const orderA = categoryMap[a]?.order || 999;
-                    const orderB = categoryMap[b]?.order || 999;
-                    return orderA - orderB;
-                });
-
-                // Generate HTML for all categories
-                let htmlContent = '';
-                sortedCategories.forEach(category => {
-                    const categoryInfo = categoryMap[category];
-                    if (!categoryInfo) return; // Skip unmapped categories
-
-                    const categoryFAQs = groupedFAQs[category];
-                    const { label, anchor, order } = categoryInfo;
-
-                    // Start section
-                    htmlContent += `<section id="${anchor}" class="category-matrix-block">`;
-                    htmlContent += `<h3 class="category-matrix-title">${order}. ${label}</h3>`;
-
-                    // Add each FAQ in this category
-                    categoryFAQs.forEach((faq, index) => {
-                        const faqNumber = `${order}.${index + 1}`;
-                        const escapedQuestion = escapeHtml(faq.question);
-                        const escapedAnswer = escapeHtml(faq.answer);
-                        
-                        htmlContent += `
-                        <div class="faq-accordion-card">
-                            <button class="faq-accordion-trigger" aria-expanded="false" onclick="toggleAccordionItem(this)">
-                                <span>${faqNumber} ${escapedQuestion}</span>
-                                <span class="faq-accordion-icon">▼</span>
-                            </button>
-                            <div class="faq-accordion-panel">
-                                <div class="faq-accordion-content">
-                                    <p style="margin:0 0 1rem 0;">${escapedAnswer}</p>
-                                    <div class="faq-action-row">
-                                        <button class="save-item-btn" onclick="toggleSaveItem('faq-${faq.id}', '${escapedQuestion.replace(/'/g, "\\'")}', '${escapedAnswer.replace(/'/g, "\\'")}', this)">🤍 Save</button>
-                                    </div>
-                                    <div class="faq-thumb-widget">
-                                        <div class="thumb-prompt-label">Was this answer helpful?</div>
-                                        <div class="thumb-btn-row">
-                                            <button class="thumb-btn up" id="thumb-up-${faq.id}" onclick="openThumbFeedback(${faq.id}, 'up', this)">👍 Yes</button>
-                                            <button class="thumb-btn down" id="thumb-down-${faq.id}" onclick="openThumbFeedback(${faq.id}, 'down', this)">👎 No</button>
-                                        </div>
-                                        <div class="thumb-feedback-box" id="thumb-box-${faq.id}">
-                                            <div class="thumb-feedback-label" id="thumb-box-label-${faq.id}">Anything you'd like to add?</div>
-                                            <textarea class="thumb-feedback-textarea" id="thumb-text-${faq.id}" placeholder="Type your feedback here..." oninput="onThumbTextInput(${faq.id})"></textarea>
-                                            <div class="thumb-feedback-actions">
-                                                <button class="thumb-submit-btn" id="thumb-submit-${faq.id}" onclick="submitThumbFeedback(${faq.id})">Submit</button>
-                                                <button class="thumb-skip-btn" id="thumb-skip-${faq.id}" onclick="skipThumbFeedback(${faq.id})">Skip</button>
-                                            </div>
-                                        </div>
-                                        <div class="thumb-confirm-msg" id="thumb-confirm-${faq.id}">
-                                            ✅ Thanks for your feedback!
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
-                    });
-
-                    htmlContent += `</section>`;
-                });
-
-                // Inject into container
-                document.getElementById('faqDynamicContainer').innerHTML = htmlContent;
-                
-                // Re-initialize after dynamic content is loaded
-                syncSaveButtonUIStates();
-                initializeSidebarObserver();
-                
+                allFAQsData = result.data; // backend wraps FAQs in { success: true, data: [...] }
+                renderFAQs(allFAQsData);
             } catch (error) {
                 console.error('Error loading FAQs:', error);
                 document.getElementById('faqDynamicContainer').innerHTML = 
                     '<p style="color: red; padding: 2rem;">Failed to load FAQ content. Please refresh the page.</p>';
             }
+        }
+
+        function handleFaqSearch(query) {
+            const clearBtn = document.getElementById('faqSearchClearBtn');
+            if (query.length > 0) {
+                clearBtn.style.display = 'flex';
+            } else {
+                clearBtn.style.display = 'none';
+            }
+
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                const searchTerm = query.trim().toLowerCase();
+                if (!searchTerm) {
+                    renderFAQs(allFAQsData, '');
+                    return;
+                }
+                
+                const filteredFAQs = allFAQsData.filter(faq => {
+                    const q = faq.question ? faq.question.toLowerCase() : '';
+                    const a = faq.answer ? faq.answer.toLowerCase() : '';
+                    return q.includes(searchTerm) || a.includes(searchTerm);
+                });
+                
+                renderFAQs(filteredFAQs, searchTerm);
+            }, 300);
+        }
+
+        function clearFaqSearch() {
+            const input = document.getElementById('faqSearchInput');
+            input.value = '';
+            document.getElementById('faqSearchClearBtn').style.display = 'none';
+            clearTimeout(searchDebounceTimer);
+            renderFAQs(allFAQsData, '');
+        }
+
+        function highlightSearchTerm(text, searchTerm) {
+            if (!searchTerm) return escapeHtml(text);
+            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})`, 'gi');
+            const parts = text.split(regex);
+            return parts.map((part, i) => {
+                if (i % 2 === 1) {
+                    return `<mark style="background-color: rgba(255, 255, 0, 0.4); color: inherit; padding: 0 2px; border-radius: 2px;">${escapeHtml(part)}</mark>`;
+                } else {
+                    return escapeHtml(part);
+                }
+            }).join('');
+        }
+
+        function renderFAQs(faqsToRender, searchTerm = '') {
+            const container = document.getElementById('faqDynamicContainer');
+            
+            if (faqsToRender.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔍</div>
+                        <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">No FAQs found</h3>
+                        <p>No FAQs found for '<strong>${escapeHtml(searchTerm)}</strong>'. Try a different keyword.</p>
+                    </div>`;
+                return;
+            }
+
+            // Group FAQs by category
+            const groupedFAQs = {};
+            faqsToRender.forEach(faq => {
+                if (!groupedFAQs[faq.category]) {
+                    groupedFAQs[faq.category] = [];
+                }
+                groupedFAQs[faq.category].push(faq);
+            });
+
+            // Sort categories by order from categoryMap
+            const sortedCategories = Object.keys(groupedFAQs).sort((a, b) => {
+                const orderA = categoryMap[a]?.order || 999;
+                const orderB = categoryMap[b]?.order || 999;
+                return orderA - orderB;
+            });
+
+            // Generate HTML for all categories
+            let htmlContent = '';
+            sortedCategories.forEach(category => {
+                const categoryInfo = categoryMap[category];
+                if (!categoryInfo) return; // Skip unmapped categories
+
+                const categoryFAQs = groupedFAQs[category];
+                const { label, anchor, order } = categoryInfo;
+
+                // Start section
+                htmlContent += `<section id="${anchor}" class="category-matrix-block">`;
+                htmlContent += `<h3 class="category-matrix-title">${order}. ${label}</h3>`;
+
+                // Add each FAQ in this category
+                categoryFAQs.forEach((faq, index) => {
+                    const faqNumber = `${order}.${index + 1}`;
+                    const displayQuestion = highlightSearchTerm(faq.question, searchTerm);
+                    const displayAnswer = highlightSearchTerm(faq.answer, searchTerm);
+                    
+                    const escapedRawQuestion = escapeHtml(faq.question).replace(/'/g, "\\\\'");
+                    const escapedRawAnswer = escapeHtml(faq.answer).replace(/'/g, "\\\\'");
+                    
+                    htmlContent += `
+                    <div class="faq-accordion-card">
+                        <button class="faq-accordion-trigger" aria-expanded="false" onclick="toggleAccordionItem(this)">
+                            <span>${faqNumber} ${displayQuestion}</span>
+                            <span class="faq-accordion-icon">▼</span>
+                        </button>
+                        <div class="faq-accordion-panel">
+                            <div class="faq-accordion-content">
+                                <p style="margin:0 0 1rem 0;">${displayAnswer}</p>
+                                <div class="faq-action-row">
+                                    <button class="save-item-btn" onclick="toggleSaveItem('faq-${faq.id}', '${escapedRawQuestion}', '${escapedRawAnswer}', this)">🤍 Save</button>
+                                </div>
+                                <div class="faq-thumb-widget">
+                                    <div class="thumb-prompt-label">Was this answer helpful?</div>
+                                    <div class="thumb-btn-row">
+                                        <button class="thumb-btn up" id="thumb-up-${faq.id}" onclick="openThumbFeedback(${faq.id}, 'up', this)">👍 Yes</button>
+                                        <button class="thumb-btn down" id="thumb-down-${faq.id}" onclick="openThumbFeedback(${faq.id}, 'down', this)">👎 No</button>
+                                    </div>
+                                    <div class="thumb-feedback-box" id="thumb-box-${faq.id}">
+                                        <div class="thumb-feedback-label" id="thumb-box-label-${faq.id}">Anything you'd like to add?</div>
+                                        <textarea class="thumb-feedback-textarea" id="thumb-text-${faq.id}" placeholder="Type your feedback here..." oninput="onThumbTextInput(${faq.id})"></textarea>
+                                        <div class="thumb-feedback-actions">
+                                            <button class="thumb-submit-btn" id="thumb-submit-${faq.id}" onclick="submitThumbFeedback(${faq.id})">Submit</button>
+                                            <button class="thumb-skip-btn" id="thumb-skip-${faq.id}" onclick="skipThumbFeedback(${faq.id})">Skip</button>
+                                        </div>
+                                    </div>
+                                    <div class="thumb-confirm-msg" id="thumb-confirm-${faq.id}">
+                                        ✅ Thanks for your feedback!
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+
+                htmlContent += `</section>`;
+            });
+
+            // Inject into container
+            document.getElementById('faqDynamicContainer').innerHTML = htmlContent;
+            
+            // Re-initialize after dynamic content is loaded
+            syncSaveButtonUIStates();
+            initializeSidebarObserver();
         }
 
         // Helper function to escape HTML special characters
