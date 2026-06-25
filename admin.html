@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VINS Portal - Admin Control Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Auth Gate Overlay Styles */
+        .auth-gate-container {
+            max-width: 450px;
+            margin: 5rem auto;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2.5rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .auth-input-group {
+            margin: 1.25rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: left;
+        }
+
+        .auth-input-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 0.85rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--panel-sub);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .auth-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        .auth-error-msg {
+            color: var(--badge-critical-txt);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        /* Core Panel Workspace Layout */
+        .admin-workspace-wrapper {
+            display: none;
+        }
+
+        /* Control Panel Tab Switcher Components */
+        .admin-tab-row {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .admin-tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .admin-tab-btn:hover {
+            background: var(--panel-sub);
+            color: var(--text-main);
+        }
+
+        .admin-tab-btn.tab-active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .admin-panel-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-content-view {
+            display: none;
+        }
+
+        .tab-content-view.view-active {
+            display: block;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        .form-row label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        
+        .form-row input, .form-row select, .form-row textarea { 
+            padding: 0.75rem; 
+            border-radius: 6px; 
+            border: 1px solid var(--border-color); 
+            background: var(--panel-sub); 
+            color: var(--text-main); 
+            font-size: 0.95rem; 
+            outline: none;
+        }
+
+        .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+            border-color: var(--accent-color);
+        }
+        
+        .admin-action-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .admin-action-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .admin-secondary-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .admin-secondary-btn:hover {
+            border-color: var(--text-muted);
+        }
+
+        /* Table Architecture Styling */
+        .management-table-frame {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            text-align: left;
+        }
+
+        .management-table-frame th {
+            background: var(--panel-sub);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .management-table-frame td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            vertical-align: top;
+        }
+
+        .management-table-frame tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .action-flex-cell {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .table-action-trigger {
+            background: transparent;
+            border: none;
+            font-size: 0.82rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .action-modify {
+            color: var(--accent-color);
+        }
+
+        .action-modify:hover {
+            background: rgba(var(--accent-color-rgb), 0.1);
+        }
+
+        .action-remove {
+            color: var(--badge-critical-txt);
+        }
+
+        .action-remove:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .pin-ledger-btn {
+            background: var(--panel-sub);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .summary-badge-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .summary-mini-card {
+            background: var(--panel-sub);
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .summary-mini-card .val {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="global-nav">
+        <div class="nav-container">
+            <h2 class="nav-brand">🚀 VINS Support Hub</h2>
+            <div class="nav-right-block">
+                <div class="nav-links">
+                    <a href="intro.html">Getting Started</a>
+                    <a href="index.html">Browse FAQs</a>
+                    <a href="assistant.html">AI Assistant</a>
+                    <a href="saved.html">Saved Items</a>
+                    <a href="dashboard.html">Analytics</a>
+                    <a href="admin.html" class="active">Admin</a>
+                </div>
+                <div class="theme-toggle-wrapper">
+                    <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Theme"></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="authGate" class="auth-gate-container">
+        <h2 style="margin-top: 0; color: var(--accent-color);">Admin Verification Required</h2>
+        <p style="color: var(--text-muted); font-size: 0.92rem;">Please provide your administrative credentials to manage system resources.</p>
+        
+        <div class="auth-input-group">
+            <label for="adminUserField">Admin Username</label>
+            <input type="text" id="adminUserField" class="auth-input" placeholder="Enter administrative identifier" onkeypress="handleAuthKeypress(event)">
+        </div>
+
+        <div class="auth-input-group">
+            <label for="adminPassField">Security Password</label>
+            <input type="password" id="adminPassField" class="auth-input" placeholder="••••••••••••" onkeypress="handleAuthKeypress(event)">
+        </div>
+        
+        <div id="authError" class="auth-error-msg">❌ Invalid Administrative Username or Password.</div>
+        
+        <button class="admin-action-btn" style="width: 100%; margin-top: 1rem;" onclick="verifyAdminCredentials()">Verify Credentials</button>
+    </div>
+
+    <div id="adminWorkspace" class="main-container admin-workspace-wrapper">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <h2 style="margin: 0;">Database Maintenance Portal</h2>
+                <p style="color: var(--text-muted); margin: 0.25rem 0 0 0; font-size: 0.9rem;">Operational control room for the active core FAQ runtime indexes.</p>
+            </div>
+            <button class="pin-ledger-btn" onclick="terminateSession()">Lock Console 🔒</button>
+        </div>
+
+        <div class="summary-badge-strip">
+            <div class="summary-mini-card">
+                <div style="font-size: 0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Track Framework Components</div>
+                <div class="val" id="countCategories">14</div>
+            </div>
+            <div class="summary-mini-card">
+                <div style="font-size: 0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Total Registered Rules</div>
+                <div class="val" id="countRules">0</div>
+            </div>
+        </div>
+
+        <div class="admin-tab-row">
+            <button class="admin-tab-btn tab-active" onclick="switchAdminTab('tabAdd')">➕ Add New Rule</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('tabManage')">🛠️ Update & Edit Framework</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('tabRatings')">⭐ Ratings Dashboard</button>
+            <button class="admin-tab-btn" onclick="switchAdminTab('tabRaw')">📦 Database Blueprint</button>
+        </div>
+
+        <div id="tabAdd" class="tab-content-view view-active admin-panel-card">
+            <h3 style="margin-top:0; margin-bottom:1.25rem; color: var(--accent-color);">Publish New Custom System Rule Entry</h3>
+            <div class="form-row">
+                <label for="adminCategorySelect">Select Target Track Category Mapping</label>
+                <select id="adminCategorySelect">
+                    </select>
+            </div>
+            <div class="form-row">
+                <label for="adminQuestion">Rule Question Header Description</label>
+                <input type="text" id="adminQuestion" placeholder="e.g., What happens if I miss the NOC upload cutoff window?">
+            </div>
+            <div class="form-row">
+                <label for="adminAnswer">Rule Answer Payload Content</label>
+                <textarea id="adminAnswer" rows="4" placeholder="Type verified programmatic system directives here..."></textarea>
+            </div>
+            <button class="admin-action-btn" onclick="addCustomRule()">Commit to Database Log</button>
+        </div>
+
+        <div id="tabManage" class="tab-content-view admin-panel-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin:0; color: var(--accent-color);">Active Matrix Rules Registry</h3>
+                <select id="filterCategoryDropdown" onchange="syncManagementMatrixTable()" style="padding: 0.4rem; border-radius:6px; background:var(--panel-sub); color:var(--text-main); border:1px solid var(--border-color); font-size:0.85rem;">
+                    <option value="ALL">Show All Structural Categories</option>
+                </select>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table class="management-table-frame">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Category Mapping</th>
+                            <th style="width: 30%;">Question Block</th>
+                            <th style="width: 35%;">Answer Payload</th>
+                            <th style="width: 10%; text-align: center;">Controls</th>
+                        </tr>
+                    </thead>
+                    <tbody id="managementTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tabRatings" class="tab-content-view admin-panel-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin:0; color: var(--accent-color);">User Ratings & Feedback Analysis</h3>
+                <button class="admin-secondary-btn" onclick="refreshRatingsData()">🔄 Refresh Data</button>
+            </div>
+            <p style="color: var(--text-muted); font-size:0.88rem; margin-bottom:1.5rem;">Semantically deduplicated ratings showing frequently asked questions with low ratings (high priority score = needs attention).</p>
+            
+            <div id="ratingsStatsBar" class="summary-badge-strip" style="margin-bottom: 1.5rem;">
+                <div class="summary-mini-card">
+                    <div style="font-size: 0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Total Unique Questions</div>
+                    <div class="val" id="totalUniqueQuestions">0</div>
+                </div>
+                <div class="summary-mini-card">
+                    <div style="font-size: 0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Total Ratings Received</div>
+                    <div class="val" id="totalRatingsCount">0</div>
+                </div>
+                <div class="summary-mini-card">
+                    <div style="font-size: 0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Average Rating</div>
+                    <div class="val" id="overallAvgRating">-</div>
+                </div>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table class="management-table-frame">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">Priority</th>
+                            <th style="width: 30%;">Representative Question</th>
+                            <th style="width: 8%; text-align: center;">Ask Count</th>
+                            <th style="width: 10%; text-align: center;">Avg Rating</th>
+                            <th style="width: 10%; text-align: center;">Priority Score</th>
+                            <th style="width: 12%; text-align: center;">Feedback Count</th>
+                            <th style="width: 10%; text-align: center;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ratingsTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align:center; color:var(--text-muted); padding:2rem;">
+                                Loading ratings data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tabRaw" class="tab-content-view admin-panel-card">
+            <h3 style="margin-top:0; color: var(--accent-color);">System Registry Dump File</h3>
+            <p style="color: var(--text-muted); font-size:0.88rem; margin-bottom:1rem;">Direct readout profile containing the complete array layout structures for verification troubleshooting purposes.</p>
+            <div class="form-row">
+                <textarea id="rawJsonConsole" rows="12" style="font-family: monospace; font-size: 0.85rem; line-height:1.4; background:#0d1117; color:#58a6ff; border-color:#21262d;" readonly></textarea>
+            </div>
+            <div style="display:flex; gap:0.5rem;">
+                <button class="admin-secondary-btn" onclick="copyRawJsonDump()">Copy Logs Payload</button>
+                <button class="admin-secondary-btn" style="color: var(--badge-critical-txt);" onclick="factoryResetDatabase()">Reset Factory Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="inlineEditModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">
+        <div class="admin-panel-card" style="width:100%; max-width:600px; margin:20px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+            <h3 style="margin-top:0; color:var(--accent-color);">Modify Existing Policy Parameter</h3>
+            <input type="hidden" id="editModalGroupIdx">
+            <input type="hidden" id="editModalItemIdx">
+            <div class="form-row">
+                <label>Question Target Text String</label>
+                <input type="text" id="editModalQuestionInput">
+            </div>
+            <div class="form-row">
+                <label>Answer Output Payload Text</label>
+                <textarea id="editModalAnswerInput" rows="5"></textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
+                <button class="admin-secondary-btn" onclick="closeInlineEditModal()">Cancel</button>
+                <button class="admin-action-btn" onclick="commitInlineEditModification()">Apply Overwrites</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const initialFAQs = [
+            { id: "1", category: "1. About the internship", items: [
+                { q: "What is the Vicharanashala internship?", a: "It is an intensive program structured to help interns develop hands-on engineering, problem-solving, and deployment workflows through focused milestones." },
+                { q: "What is VINS?", a: "VINS stands for the Vicharanashala Internship Network System, the primary core virtual engine used to manage frameworks, tracks, and online sprint tracks." },
+                { q: "What are the phases of VINS, and what do the badges mean?", a: "The framework runs across sequential development sprint milestones. Badges on your profiles represent completed verification checkpoints and platform index rankings." },
+                { q: "Who is the internship for? Are alumni eligible?", a: "The internship targets qualifying engineering and computer science undergraduates. Registered alumni can participate under custom tracking parameters." },
+                { q: "Is this the same as IIT Ropar's official Summer Research Internship?", a: "No, this is a distinct industrial scaling framework operated through the Vicharanashala Network System ecosystem." },
+                { q: "I have to attend my class tomorrow/today/some day — can I take leave?", a: "Sprints are fundamentally self-paced but require synchronous standup updates or notification via the platform tools." }
+            ]},
+            { id: "2", category: "2. Timing and dates", items: [
+                { q: "When can I start?", a: "Your official launch cycle coordinates exactly with the onboarding timestamp listed in your active profile gateway." },
+                { q: "How long is the internship?", a: "The runtime spans across your standard scheduled tracking window as outlined inside your accepted letter parameters." },
+                { q: "Can I start in July, August or later if I have exams now?", a: "Adjustments must be filed through the date customization matrix before the official launch cohort windows freeze." },
+                { q: "Can I start with the cohort and take a relaxation during my exam window?", a: "Yes, you can register high-priority maintenance blocks to temporarily defer milestone verification review updates." },
+                { q: "Can I take leave or get an exemption during the internship for an exam scheduled in June?", a: "Submit an academic adjustment request via your student console to secure code pipeline freeze windows." },
+                { q: "Are orientation session recordings shared with interns, and can project or group assignments be changed after watching them?", a: "Recordings are pushed to the Vibe stream system. Group or track re-allocations are locked once assignment matrices execute." }
+            ]},
+            { id: "3", category: "3. NOC (No Objection Certificate)", items: [
+                { q: "What dates do I put on the NOC?", a: "Ensure your NOC explicitly spans the entire active deployment schedule specified by your institution guidelines." },
+                { q: "Who can sign the NOC?", a: "Your Head of Department (HOD), Registrar, Training & Placement Officer (TPO), or authorized Program Dean can validate the document." },
+                { q: "When do I submit the NOC? Is the deadline hard?", a: "NOC submissions must be committed to the vault exactly 7 days prior to Phase 2 activation cycles." },
+                { q: "What format should I use? Do I need to design it myself?", a: "Standard institutional letterheads are preferred, or you can download the layout framework provided in the onboarding toolkit." },
+                { q: "What if my college / Program Chair gives me an NOC in their own format?", a: "Custom university-approved formats are fully accepted as long as eligibility signatures remain visible." },
+                { q: "Does it need to be signed by hand?", a: "Wet ink signatures or cryptographic digital signing certificates (DocuSign/Aadhaar) are acceptable." },
+                { q: "Can my HOD email the NOC instead of uploading it?", a: "No, all validation targets must be uploaded directly by the intern to maintain file hash integrity check parameters." },
+                { q: "How do I download and upload the NOC?", a: "Use the action buttons located inside the document upload block on your master dashboard view." },
+                { q: "What if my NOC is not formally verified?", a: "Unverified entries will trigger system flags. Ensure your upload is crisp, legible, and completely uncropped." },
+                { q: "My online course (Masai, NPTEL, Coursera, etc.) won't issue an NOC. What do I do?", a: "File an alternate status declaration statement using the custom waiver templates inside the system console." },
+                { q: "My HOD/college official wants written confirmation before signing my NOC. What do I show them?", a: "Present your official selection confirmation letter or the program specification document available in your toolkit." },
+                { q: "Can Prof. Sudarshan Iyengar or a faculty member from IIT Ropar sign my NOC for the internship?", a: "No, NOC validation must originate directly from your home institution officials to confirm credit alignment." }
+            ]},
+            { id: "4", category: "4. Selection, offer letter, and certificate", items: [
+                { q: "How do I know I am selected?", a: "A validated selection token and notification indicator will light up on your tracking dashboard portal." },
+                { q: "How do I opt into VINS?", a: "Confirm your deployment path parameters through the main invitation confirmation link sent to your mail node." },
+                { q: "When do I get the offer letter?", a: "Offer documents are generated automatically within 72 hours of parameter opt-in confirmation validation." },
+                { q: "Will I get a certificate?", a: "Yes, successful compilation of all core milestone tracks grants an verified digital credential." },
+                { q: "How do I confirm my internship dates?", a: "Lock your target timeline rows using the scheduler module inside the selection control menu." },
+                { q: "I am a minor/major in AI student, can I join the programme? I don't need a NOC as I am from IIT Ropar", a: "IIT Ropar campus students skip NOC checking lines but must register core credentials to sync internal databases." },
+                { q: "How do I accept the offer letter?", a: "Click 'Commit Acceptance' and sign the platform authorization checkbox on your dashboard portal." },
+                { q: "Can I change my internship dates?", a: "Date alterations are limited and must be executed before final cohort deployment scripts trigger." },
+                { q: "My NOC is not ready but my start date is approaching. What do I do?", a: "Apply for a conditional extension token via the support portal to avoid tracking lockout loops." },
+                { q: "When does my internship actually begin? Will I receive a notification on the day?", a: "Systems initialize on Day 1. Automated access confirmation emails go live at 08:00 UTC." },
+                { q: "Can I switch from VINS (online) to VISE (offline) after being selected?", a: "Switches are strictly constrained by lab space allocations and require explicit oversight approval." },
+                { q: "Can I change my internship dates after the offer letter?", a: "Post-issuance date updates require logging an administrative exception ticket inside the system tools." }
+            ]},
+            { id: "5", category: "5. Work, mentorship, and projects", items: [
+                { q: "What will I work on?", a: "You will build cloud infrastructure components, design optimization systems, or construct deep algorithmic data models." },
+                { q: "How many hours per day?", a: "Expect to spend roughly 4 to 6 hours daily keeping up with module development tracks and code updates." },
+                { q: "Who is my mentor?", a: "An industry engineer or technical lead will be mapped to your specific development group framework." },
+                { q: "Is there a stipend?", a: "Stipend distribution properties depend entirely on your unique offer profile structure and tracking variables." },
+                { q: "Do I need my own laptop? Should I preload any software?", a: "Yes, you need a personal computer. Preloading targets (Git, Docker, Node engines) are detailed in the onboarding manual." },
+                { q: "I am using a different email on GitHub / Zoom / the learning platform. Is that okay?", a: "To ensure metrics process accurately, link your alternate profiles under the 'Identity Matrix' configuration pane." },
+                { q: "Why has my mentor not been assigned yet, or contacted me on day 1?", a: "Mentor mappings execute systematically across a 48-hour calibration frame once active cohorts initialize." }
+            ]},
+            { id: "6", category: "6. Code of conduct — communication channels", items: [
+                { q: "What are the official communication channels?", a: "The ecosystem utilizes Discord server grids for chat, Vibe channels for media, and your direct dashboard system for official updates." }
+            ]},
+            { id: "7", category: "7. Interviews Related", items: [
+                { q: "My interview is not marked as complete on the dashboard — what do I do?", a: "Evaluation registers can require up to 24 hours to re-sync logs. If it stays stuck, trigger a hard refresh or contact support." }
+            ]},
+            { id: "8", category: "8. Certificate", items: [
+                { q: "Does Vicharanashala send a grade report or evaluation to my university for internship credit?", a: "Digital evaluation matrices can be forwarded directly upon receiving a validated institution request token." },
+                { q: "Does the Vicharanashala internship certificate specify whether it was completed online or offline ?", a: "Yes, the credential code strictly designates your active framework model path (VINS online vs VISE offline)." },
+                { q: "Will the completion certificate be a physical hardcopy or an e-certificate?", a: "Credentials ship as verifiable, tamper-proof e-certificates complete with cryptographic validation blocks." },
+                { q: "Is there a WhatsApp group for candidates during the internship?", a: "No, all official communication flows securely through enterprise Discord architectures to prevent spam." }
+            ]},
+            { id: "9", category: "9. Rosetta — your internship journal", items: [
+                { q: "What is Rosetta?", a: "Rosetta is your structured daily reflection journal used to track conceptual breakthroughs and system architecture patterns." },
+                { q: "Why does this exist? Is it just busywork?", a: "It converts chaotic field engineering experiences into systematic documentation logs, reinforcing long-term memory retention." },
+                { q: "What is a \"thinking routine\"?", a: "A logical prompt sequence structured to break down complex code bugs and development methodologies clearly." },
+                { q: "How do I get my Rosetta journal?", a: "The instance initializes automatically inside your active document console on day 1 of the track." },
+                { q: "How do I use it day to day?", a: "Log into your dashboard block before EOD, select the active day slot, and fill out your progress indicators." },
+                { q: "How long should each entry be?", a: "Focus on technical precision over fluff; 3 to 5 clear, concise sentences packed with real insights are ideal." },
+                { q: "What is the one rule?", a: "Consistency. Logs must be filed inside their respective daily entry windows before system lock triggers." },
+                { q: "Can I use ChatGPT or any AI tool to write my entries?", a: "Absolutely not. Automated content is flagged immediately by language profiling algorithms and will void final verification checks." },
+                { q: "What if I miss a day?", a: "Missed days flag your registry index. Reach out to your team lead to request historical entry tokens if an emergency occurs." },
+                { q: "Will anyone read my journal during the internship?", a: "Mentors and system auditors run programmatic quality checks across journals on a rolling basis." },
+                { q: "Can the prompts change mid-internship?", a: "Prompts alter dynamically as you shift across milestone modules to align with changing technical goals." },
+                { q: "How do I submit Rosetta at the end?", a: "Click the 'Compile & Freeze Journal' button on your profile pane during final week procedures." },
+                { q: "I have a question about Rosetta that is not answered here. What do I do?", a: "Post your system issue directly inside the `#rosetta-queries` pipeline on the Discord engine." },
+                { q: "My college requires a written confirmation that the internship is self-paced and will not clash with college classes — what document can I share with them?", a: "Generate a custom 'Framework Structural Declaration PDF' directly from your dashboard settings array." }
+            ]},
+            { id: "10", category: "10. Phase 1 — coursework, Vibe LMS, and live sessions", items: [
+                { q: "I've already completed a course (Vinternship, Pinternship, MERN, or AI) with you in an earlier cohort — am I exempt from repeating it?", a: "File a record matching exemption ticket along with your historic certificate hash for verification." },
+                { q: "How do I register for the AI Fundamentals course on Vibe?", a: "Use the automated enrollment button inside the active course card on your main dashboard layout." },
+                { q: "I registered on Vibe with a different email than my Samagama email — is that OK?", a: "To maintain smooth score tracking, link the two accounts instantly through the profile consolidation portal." },
+                { q: "Are live sessions mandatory if I'm on the viva route?", a: "Viva track pipelines still require a minimum 80% real-time attendance index score across fundamental sessions." },
+                { q: "When and how do I get the Zoom link for the kickoff meeting?", a: "The access payload updates live on your calendar card exactly 30 minutes before system launch." },
+                { q: "How do I get the link for the daily Zoom standups? Are they mandatory?", a: "Standup links reside permanently in your calendar deck. Attendance is mandatory for active milestone tracking." },
+                { q: "How do I provide my Zoom ID, and why does it matter?", a: "Input your precise Zoom email handle inside account settings so automated tracking systems can credit your attendance properly." },
+                { q: "I saved the wrong Zoom ID — can I change it?", a: "Yes, you can overwrite your tracking handle up until the first live evaluation event locks." },
+                { q: "Can we register and start the vibe courses before our internship date formally starts?", a: "Early system initialization is permitted if your active console displays the available course units." },
+                { q: "What are the attendance and participation rules?", a: "Maintain an overall 90% streaming session completion rate and respond to all validation checks." },
+                { q: "What are Spurti Points (SP)? Do they affect my internship?", a: "They act as a real-time health indicator of your participation, code quality index, and code submission consistency." },
+                { q: "What are the live-session (Zoom) participation and conduct rules?", a: "Keep your camera active in clear lighting, use professional handles, and engage politely with chat prompts." },
+                { q: "I got \"Failed to submit poll. Error: 100035000\" during a session — what does it mean, and will I lose poll credit?", a: "This indicates a brief server sync failure. The background tracker logs your click attempts, meaning your credit remains secure." }
+            ]},
+            { id: "11", category: "11. Spurti Points", items: [
+                { q: "What are Spurti Points?", a: "An internal algorithmic tracking score showing your engagement, consistency, and platform alignment." },
+                { q: "Is SP a finished system?", a: "The engine runs continuously, adjusting parameter weights as new modules rollout." },
+                { q: "How much importance should I give to my SP number?", a: "Treat it as an executive dashboard gauge: keep it green to show your development pipeline is running smoothly." },
+                { q: "Can I be terminated or excused because of low SP?", a: "Consistently low numbers caused by missed assignments can trigger automatic platform tracking blocks." },
+                { q: "What if my SP shows as zero or even negative?", a: "Negative shifts mean you missed milestone deadlines. Submitting fresh code modules will restore your score." },
+                { q: "Does a higher SP bring any benefits?", a: "Top balances unlock premium engineering resources, priority project choices, and honors tags." },
+                { q: "If SP does not determine outcomes, what does?", a: "Your final code reviews, live design defenses, and system optimization metrics carry the final weight." },
+                { q: "What are the participation requirements tracked strictly?", a: "Daily standalone updates, Rosetta journal consistency, and Vibe module progression rates." },
+                { q: "What does \"rolling basis\" mean?", a: "It means evaluation updates process continuously throughout the sprint rather than waiting for a single final review date." },
+                { q: "What happens if I fall below the required participation level?", a: "The system triggers warning alerts, followed by a freeze on your module access rights if left unaddressed." },
+                { q: "How are Spurti Points calculated?", a: "They use a dynamic formula: $+SP$ for early commits and correct quiz answers; $-SP$ for missed checks or late updates." }
+            ]},
+            { id: "12", category: "12. Yaksha Chat Related", items: [
+                { q: "I'm unable to type in the chat after clicking 'Interact with Yaksha' — what should I do?", a: "Clear your browser cache, check your active session socket status, or log back into your main profile page." }
+            ]},
+            { id: "13", category: "13. ViBe Platform", items: [
+                { q: "How do I log in to ViBe?", a: "Use your verified invite credentials through the dedicated enterprise authentication gateway." },
+                { q: "Invite accepted but shows \"No course enrolled\"?", a: "This means your profile hasn't finished provisioning yet. Mappings sync completely within two hours." },
+                { q: "Why are videos stuck or repeating?", a: "The automated verification player flags when focus is lost. Keep the learning window active on your screen." },
+                { q: "Can I use a mobile or tablet?", a: "For best results with code environments and verification systems, use a standard desktop browser." },
+                { q: "I'm experiencing video issues (stuck, looping, skipping) on ViBe. How do I troubleshoot?", a: "Disable browser extensions, update your hardware acceleration settings, and check your network speeds." },
+                { q: "I have completed all videos and quizzes in the ViBe course, but my progress is still showing less than 100%. What should I do?", a: "Ensure you didn't skip any inline knowledge check blocks or micro-feedback modules." },
+                { q: "I feel the ViBe content or platform is not good or I am unhappy with the way progress is evaluated. Can I request an exception or bypass the system?", a: "No, progression validation runs systematically for everyone to ensure standard quality benchmarks." },
+                { q: "Is the ViBe consent form compulsory? What if I don't want to grant camera access?", a: "Camera validation is mandatory to run the platform's verification checks smoothly during review sprints." },
+                { q: "What are penalty scores on the ViBe platform, and how do they affect our performance or HP?", a: "Tab-switching or looking away triggers penalty flags, which lower your overall profile rating over time." },
+                { q: "When should I use the Flag option on ViBe, and when should I contact support?", a: "Use 'Flag' to report errors in specific test questions; use support for overall account issues." },
+                { q: "What is Linear Progression on ViBe?", a: "A sequential navigation model where you must master the current topic before the next structural node unlocks." },
+                { q: "Can I use the left navigation panel to jump ahead to a later video or quiz?", a: "No, skipping ahead is locked to keep learning milestones structured and properly managed." },
+                { q: "I am seeing a red \"Access Restricted\" banner. Is this a bug?", a: "No, this means structural validation failed due to too many rapid focus shifts or context timeouts." },
+                { q: "How do I resolve the \"Access Restricted\" error?", a: "Complete the identity check loop or wait for your dashboard review window to reset." },
+                { q: "Why does ViBe sometimes make me re-watch a clip after a quiz?", a: "Answering an inline check incorrectly resets that short module section to reinforce the core concepts." },
+                { q: "What kinds of quiz questions will I see on ViBe?", a: "You'll encounter code analysis puzzles, design choice challenges, and core technical questions." },
+                { q: "Are the same proctoring rules applied to every course on ViBe?", a: "Core tracks use full validation rules; auxiliary reference courses offer more relaxed viewing settings." },
+                { q: "What does the \"quiet helper\" on ViBe actually do?", a: "It monitors player execution and updates your progress metric balances in the background." },
+                { q: "Does ViBe record long videos of me while I'm learning?", a: "No, it only reviews random frame check samples locally to verify the learner is present on camera." },
+                { q: "What is the single most common avoidable mistake learners make?", a: "Navigating away or opening other tabs while video lessons are running." },
+                { q: "Why does the lesson keep pausing or restarting even when I'm paying attention?", a: "Check that your camera lens is clean and your ambient lighting allows the presence check to read clearly." },
+                { q: "Can I read the quiz questions aloud or mutter to myself while watching?", a: "Yes, standard verbal processing is fine and won't trigger audio alert flags." },
+                { q: "Can I study with a friend on camera since we're learning together?", a: "No, background presence checks expect only one verified intern frame on camera at a time." },
+                { q: "Will I lose my progress if I clear my browser or reinstall it?", a: "No, your progress parameters save continuously to our secure remote database servers." },
+                { q: "Is there a recommended daily learning rhythm on ViBe?", a: "Completing 60 to 90 minutes of focused study every morning keeps you well ahead of tracking goals." },
+                { q: "What should my \"study corner\" look like before I start a ViBe session?", a: "Set up a clean space with steady desk lighting and an uncluttered background for your camera face checks." },
+                { q: "I'm facing a technical issue on ViBe that I can't resolve. Is there live support available?", a: "Yes, open a support ticket inside the `#vibe-help` channel on Discord to reach a technician." }
+            ]},
+            { id: "14", category: "14. Team Formation", items: [
+                { q: "Is team formation compulsory?", a: "Yes, building software systems requires teamwork, making team modules mandatory for Phase 2 sprints." },
+                { q: "What is the size of a team?", a: "Standard development squads are configured to contain exactly 3 to 4 verified interns." },
+                { q: "How are teams formed?", a: "Squads are formed during interactive matchmaking windows or matched via our skills algorithm." },
+                { q: "I started on May 15/16 but couldn't form a team during the activity. What happens now?", a: "The placement system automatically maps remaining individual developers into balanced squads." },
+                { q: "There was a typo in our email addresses during team formation. Can we fix it?", a: "Open a team correction ticket inside the support portal to rewrite your identifier rows." },
+                { q: "I formed a team with only two members. Will it be considered?", a: "The layout manager will add single registrants to your group to bring it to standard size." },
+                { q: "What if a team member leaves or becomes ineligible during Phase 1?", a: "The allocation engine rebalances your group or merges partial squads to keep projects moving." },
+                { q: "Can I form a team with someone from my own college?", a: "Yes, cross-registration is supported if all members belong to the same active sprint track." },
+                { q: "Can I form a team with students from my IIT MBS cohort?", a: "Yes, choose the proper cohort identifier tag during group registration step steps." },
+                { q: "Can we change our team name after submission?", a: "No, team identifiers map directly across repository setups and cannot be renamed later." },
+                { q: "What if multiple teams choose the same name?", a: "The system avoids name collisions by automatically appending your unique cohort cluster ID number." },
+                { q: "What should I do if I face issues within my team?", a: "Contact your mapped agile sprint lead to set up an internal mediation review window." },
+                { q: "How will I know who my mentor is?", a: "Your assigned mentor details will show up on your team overview card once assignments lock." },
+                { q: "When will I know my team details?", a: "Squad assignments publish completely within 72 hours after the registration window closes." },
+                { q: "I received a team list email but my name is not included. What should I do?", a: "Alert the deployment team immediately via the discord channel to fix the registration skip." },
+                { q: "We selected Project X as our top priority but were assigned Project Y. Can we change it?", a: "No, project allocations balance system workloads and match available mentor fields." },
+                { q: "I just started the internship. Can I form my own team now?", a: "Follow the team initialization steps on your console during the active selection timeframe." },
+                { q: "When do team activities begin?", a: "Group milestones activate immediately upon launching Phase 2 development tracks." },
+                { q: "Can I request a specific teammate after teams are assigned?", a: "No, group configurations are locked once the assignment system finishes running." },
+                { q: "What happens if a team member is inactive or not contributing?", a: "Log their inactive status in your weekly peer metrics report to initiate a milestone review." },
+                { q: "Can I switch teams if there are conflicts?", a: "Switches are handled as exceptions and require a formal review by the support team." },
+                { q: "Will team performance affect individual evaluation?", a: "Your grade balances individual codebase commits alongside overall team milestone completions." },
+                { q: "How will communication happen within teams?", a: "Teams use dedicated private channel categories automatically created on the Discord server grid." },
+                { q: "What if I miss the team allocation announcement?", a: "Check your main dashboard console; your active group mapping card displays automatically." },
+                { q: "Can a team be dissolved and reformed?", a: "Only under extreme conditions and with direct authorization from the management panel." },
+                { q: "What happens if I drop out of the internship?", a: "Your access tokens deactivate, and your team is adjusted to maintain proper project velocity." },
+                { q: "Will we get time to get to know our teammates before Phase 2?", a: "Yes, introductory sync windows are scheduled right after the matchings are announced." }
+            ]}
+        ];
+
+        // Admin Security Identifiers
+        const ADMIN_USER = "vins_admin";
+        const ADMIN_PASS = "VINS_ADMIN_2026";
+
+        function verifyAdminCredentials() {
+            const usernameInput = document.getElementById("adminUserField").value.trim();
+            const passwordInput = document.getElementById("adminPassField").value;
+            const errorBlock = document.getElementById("authError");
+
+            if (usernameInput === ADMIN_USER && passwordInput === ADMIN_PASS) {
+                sessionStorage.setItem("vins_admin_session", "authorized_active");
+                errorBlock.style.display = "none";
+                evaluateSessionState();
+            } else {
+                errorBlock.style.display = "block";
+            }
+        }
+
+        function handleAuthKeypress(e) {
+            if (e.key === "Enter") verifyAdminCredentials();
+        }
+
+        function evaluateSessionState() {
+            const status = sessionStorage.getItem("vins_admin_session");
+            const gate = document.getElementById("authGate");
+            const workspace = document.getElementById("adminWorkspace");
+
+            if (status === "authorized_active") {
+                gate.style.display = "none";
+                workspace.style.display = "block";
+                initializeDropdownOptions();
+                refreshLocalInterfaceData();
+            } else {
+                gate.style.display = "block";
+                workspace.style.display = "none";
+            }
+        }
+
+        window.terminateSession = function() {
+            sessionStorage.removeItem("vins_admin_session");
+            document.getElementById("adminUserField").value = "";
+            document.getElementById("adminPassField").value = "";
+            evaluateSessionState();
+        };
+
+        function switchAdminTab(targetTabId) {
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('tab-active'));
+            document.querySelectorAll('.tab-content-view').forEach(view => view.classList.remove('view-active'));
+            
+            event.target.classList.add('tab-active');
+            document.getElementById(targetTabId).classList.add('view-active');
+            
+            // Load ratings data when switching to the ratings tab
+            if (targetTabId === 'tabRatings') {
+                refreshRatingsData();
+            }
+        }
+
+        function getActiveDatabase() {
+            let db = localStorage.getItem("vins_faq_db");
+            if (!db) {
+                localStorage.setItem("vins_faq_db", JSON.stringify(initialFAQs));
+                return initialFAQs;
+            }
+            return JSON.parse(db);
+        }
+
+        function initializeDropdownOptions() {
+            const db = getActiveDatabase();
+            const addSelect = document.getElementById("adminCategorySelect");
+            const filterSelect = document.getElementById("filterCategoryDropdown");
+            
+            // Retain original fallback option for the data visual filter
+            filterSelect.innerHTML = `<option value="ALL">Show All Structural Categories</option>`;
+            addSelect.innerHTML = "";
+
+            db.forEach(group => {
+                const optString = `<option value="${group.id}">${group.category}</option>`;
+                addSelect.insertAdjacentHTML("beforeend", optString);
+                filterSelect.insertAdjacentHTML("beforeend", optString);
+            });
+        }
+
+        function refreshLocalInterfaceData() {
+            const db = getActiveDatabase();
+            
+            // Calculate total items size metric
+            let runningSum = 0;
+            db.forEach(g => runningSum += g.items.length);
+            document.getElementById("countRules").textContent = runningSum;
+            document.getElementById("countCategories").textContent = db.length;
+
+            // Update JSON structural layout block
+            document.getElementById("rawJsonConsole").value = JSON.stringify(db, null, 4);
+            
+            // Load interactive system management rows
+            syncManagementMatrixTable();
+        }
+
+        function syncManagementMatrixTable() {
+            const db = getActiveDatabase();
+            const tbody = document.getElementById("managementTableBody");
+            const activeFilter = document.getElementById("filterCategoryDropdown").value;
+            
+            tbody.innerHTML = "";
+            let matchCounter = 0;
+
+            db.forEach((group, groupIdx) => {
+                if (activeFilter !== "ALL" && group.id !== activeFilter) return;
+
+                group.items.forEach((item, itemIdx) => {
+                    matchCounter++;
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td style="font-weight:600; color:var(--text-muted); font-size:0.8rem;">${group.category}</td>
+                        <td style="font-weight:600; color:var(--text-main);">${item.q}</td>
+                        <td style="color:var(--text-muted); line-height:1.4;">${item.a}</td>
+                        <td>
+                            <div class="action-flex-cell">
+                                <button class="table-action-trigger action-modify" onclick="openInlineEditModal(${groupIdx}, ${itemIdx})">Edit</button>
+                                <button class="table-action-trigger action-remove" onclick="deleteRule(${groupIdx}, ${itemIdx})">Delete</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            });
+
+            if (matchCounter === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:2rem;">No matching policy items exist inside this category query index.</td></tr>`;
+            }
+        }
+
+        window.addCustomRule = function() {
+            const selectEl = document.getElementById("adminCategorySelect");
+            const catId = selectEl.value;
+            const catText = selectEl.options[selectEl.selectedIndex].text;
+            
+            const q = document.getElementById("adminQuestion").value.trim();
+            const a = document.getElementById("adminAnswer").value.trim();
+
+            if (!q || !a) {
+                alert("Please complete both question and answer tracking blocks.");
+                return;
+            }
+
+            let db = getActiveDatabase();
+            let targetGroup = db.find(g => g.id === catId);
+
+            if (!targetGroup) {
+                targetGroup = { id: catId, category: catText, items: [] };
+                db.push(targetGroup);
+                db.sort((x, y) => parseInt(x.id) - parseInt(y.id));
+            }
+
+            targetGroup.items.push({ q, a });
+            localStorage.setItem("vins_faq_db", JSON.stringify(db));
+
+            document.getElementById("adminQuestion").value = "";
+            document.getElementById("adminAnswer").value = "";
+            
+            alert("New policy parameters published across global VINS clusters!");
+            refreshLocalInterfaceData();
+        };
+
+        window.deleteRule = function(groupIdx, itemIdx) {
+            if (!confirm("Are you sure you want to scrub this rule out of the master database framework row entirely?")) return;
+            
+            let db = getActiveDatabase();
+            db[groupIdx].items.splice(itemIdx, 1);
+            
+            localStorage.setItem("vins_faq_db", JSON.stringify(db));
+            refreshLocalInterfaceData();
+        };
+
+        // Modal Action Windows Interactivity Logic
+        window.openInlineEditModal = function(groupIdx, itemIdx) {
+            const db = getActiveDatabase();
+            const targetItem = db[groupIdx].items[itemIdx];
+
+            document.getElementById("editModalGroupIdx").value = groupIdx;
+            document.getElementById("editModalItemIdx").value = itemIdx;
+            document.getElementById("editModalQuestionInput").value = targetItem.q;
+            document.getElementById("editModalAnswerInput").value = targetItem.a;
+
+            document.getElementById("inlineEditModal").style.display = "flex";
+        };
+
+        window.closeInlineEditModal = function() {
+            document.getElementById("inlineEditModal").style.display = "none";
+        };
+
+        window.commitInlineEditModification = function() {
+            const groupIdx = document.getElementById("editModalGroupIdx").value;
+            const itemIdx = document.getElementById("editModalItemIdx").value;
+            const updatedQ = document.getElementById("editModalQuestionInput").value.trim();
+            const updatedA = document.getElementById("editModalAnswerInput").value.trim();
+
+            if (!updatedQ || !updatedA) {
+                alert("Both target string parameters require validation data inputs.");
+                return;
+            }
+
+            let db = getActiveDatabase();
+            db[groupIdx].items[itemIdx] = { q: updatedQ, a: updatedA };
+
+            localStorage.setItem("vins_faq_db", JSON.stringify(db));
+            closeInlineEditModal();
+            refreshLocalInterfaceData();
+            alert("Overwrites committed to the live structural layout logs successfully!");
+        };
+
+        window.copyRawJsonDump = function() {
+            const rawConsole = document.getElementById("rawJsonConsole");
+            rawConsole.select();
+            document.execCommand("copy");
+            alert("Database blueprint tracking telemetry array copied to clipboard framework logs!");
+        };
+
+        window.factoryResetDatabase = function() {
+            if (!confirm("CRITICAL AUDIT EXCEPTION: Are you entirely sure you wish to replace the production data matrices with the standard hardcoded defaults? All subsequent manual rules edits will be lost.")) return;
+            localStorage.setItem("vins_faq_db", JSON.stringify(initialFAQs));
+            initializeDropdownOptions();
+            refreshLocalInterfaceData();
+            alert("Local application records cache updated back to standard tracking array lines.");
+        };
+
+        document.addEventListener("DOMContentLoaded", evaluateSessionState);
+
+        // Ratings Dashboard Functions
+        const RATINGS_API_URL = 'http://localhost:5000/api/admin/ratings';
+
+        async function refreshRatingsData() {
+            try {
+                console.log('📊 Fetching ratings data...');
+                
+                const response = await fetch(RATINGS_API_URL);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayRatingsData(data.data);
+                } else {
+                    throw new Error(data.message || 'Failed to fetch ratings');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error fetching ratings:', error);
+                document.getElementById("ratingsTableBody").innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align:center; color:var(--badge-critical-txt); padding:2rem;">
+                            Failed to load ratings data. Make sure the backend is running.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function displayRatingsData(ratings) {
+            const tbody = document.getElementById("ratingsTableBody");
+            
+            if (!ratings || ratings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align:center; color:var(--text-muted); padding:2rem;">
+                            No ratings data available yet. Users need to rate responses in the AI Assistant.
+                        </td>
+                    </tr>
+                `;
+                
+                document.getElementById("totalUniqueQuestions").textContent = "0";
+                document.getElementById("totalRatingsCount").textContent = "0";
+                document.getElementById("overallAvgRating").textContent = "-";
+                
+                return;
+            }
+            
+            // Calculate statistics
+            let totalAskCount = 0;
+            let totalWeightedRating = 0;
+            
+            ratings.forEach(r => {
+                totalAskCount += r.ask_count;
+                totalWeightedRating += r.average_rating * r.ask_count;
+            });
+            
+            const overallAvg = totalAskCount > 0 ? (totalWeightedRating / totalAskCount).toFixed(2) : 0;
+            
+            // Update stats
+            document.getElementById("totalUniqueQuestions").textContent = ratings.length;
+            document.getElementById("totalRatingsCount").textContent = totalAskCount;
+            document.getElementById("overallAvgRating").textContent = `★${overallAvg}`;
+            
+            // Render table rows
+            tbody.innerHTML = "";
+            
+            ratings.forEach((rating, index) => {
+                const isHighPriority = index < 5; // Top 5 are high priority
+                const feedbackCount = rating.feedback_list ? rating.feedback_list.length : 0;
+                const hasFeedback = feedbackCount > 0;
+                
+                const row = document.createElement("tr");
+                if (isHighPriority) {
+                    row.style.background = "rgba(239, 68, 68, 0.05)";
+                    row.style.borderLeft = "3px solid var(--badge-critical-txt)";
+                }
+                
+                row.innerHTML = `
+                    <td style="text-align:center;">
+                        <span style="font-size:1.2rem; font-weight:700; color:${isHighPriority ? 'var(--badge-critical-txt)' : 'var(--text-muted)'};">
+                            ${isHighPriority ? '⚠️' : (index + 1)}
+                        </span>
+                    </td>
+                    <td style="font-weight:600; color:var(--text-main);">
+                        ${escapeHtml(rating.representative_question)}
+                    </td>
+                    <td style="text-align:center; font-weight:700; color:var(--accent-color);">
+                        ${rating.ask_count}
+                    </td>
+                    <td style="text-align:center;">
+                        <span style="font-size:1.1rem;">
+                            ${generateStarRating(rating.average_rating)}
+                        </span>
+                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">
+                            ${rating.average_rating}/5.00
+                        </div>
+                    </td>
+                    <td style="text-align:center; font-weight:700; font-size:1.1rem; color:${isHighPriority ? 'var(--badge-critical-txt)' : 'var(--text-main)'};">
+                        ${rating.priority_score}
+                    </td>
+                    <td style="text-align:center;">
+                        <span style="color:${hasFeedback ? 'var(--accent-color)' : 'var(--text-muted)'}; font-weight:600;">
+                            ${feedbackCount} ${hasFeedback ? '💬' : ''}
+                        </span>
+                    </td>
+                    <td style="text-align:center;">
+                        <button class="table-action-trigger action-modify" onclick="viewRatingDetails(${rating.id})">
+                            View Details
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function generateStarRating(avgRating) {
+            const fullStars = Math.floor(avgRating);
+            const hasHalfStar = (avgRating - fullStars) >= 0.5;
+            const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+            
+            let stars = '★'.repeat(fullStars);
+            if (hasHalfStar) stars += '⯨';
+            stars += '☆'.repeat(emptyStars);
+            
+            // Color based on rating
+            const color = avgRating >= 4 ? '#10b981' : avgRating >= 3 ? '#fbbf24' : '#ef4444';
+            
+            return `<span style="color:${color};">${stars}</span>`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function viewRatingDetails(ratingId) {
+            try {
+                const response = await fetch(RATINGS_API_URL);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const rating = data.data.find(r => r.id === ratingId);
+                    if (rating) {
+                        showRatingDetailsModal(rating);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching rating details:', error);
+                alert('Failed to load rating details');
+            }
+        }
+
+        function showRatingDetailsModal(rating) {
+            const feedbackList = rating.feedback_list || [];
+            let feedbackHtml = '';
+            
+            if (feedbackList.length > 0) {
+                feedbackHtml = feedbackList.map(fb => `
+                    <div style="background:var(--panel-sub); padding:0.75rem; border-radius:6px; margin-bottom:0.5rem; border-left:3px solid ${fb.rating >= 4 ? '#10b981' : fb.rating >= 3 ? '#fbbf24' : '#ef4444'};">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+                            <span style="font-weight:600; color:var(--accent-color);">Rating: ${fb.rating}/5</span>
+                            <span style="font-size:0.8rem; color:var(--text-muted);">
+                                ${new Date(fb.created_at).toLocaleString()}
+                            </span>
+                        </div>
+                        <div style="color:var(--text-main); line-height:1.4;">
+                            "${escapeHtml(fb.feedback_text)}"
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                feedbackHtml = '<p style="color:var(--text-muted); text-align:center; padding:1rem;">No feedback text provided for this question.</p>';
+            }
+            
+            const modalHtml = `
+                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; display:flex; justify-content:center; align-items:center; padding:20px;" onclick="this.remove()">
+                    <div class="admin-panel-card" style="width:100%; max-width:700px; max-height:90vh; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
+                        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;">
+                            <h3 style="margin:0; color:var(--accent-color); flex:1;">Rating Details</h3>
+                            <button class="admin-secondary-btn" onclick="this.closest('[style*=position]').remove()" style="margin-left:1rem;">✕ Close</button>
+                        </div>
+                        
+                        <div style="margin-bottom:1.5rem;">
+                            <div style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.5rem;">Representative Question</div>
+                            <div style="font-weight:600; color:var(--text-main); font-size:1.05rem; line-height:1.5;">
+                                ${escapeHtml(rating.representative_question)}
+                            </div>
+                        </div>
+                        
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+                            <div class="summary-mini-card">
+                                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Ask Count</div>
+                                <div style="font-size:1.5rem; font-weight:700; color:var(--accent-color); margin-top:0.25rem;">${rating.ask_count}</div>
+                            </div>
+                            <div class="summary-mini-card">
+                                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Avg Rating</div>
+                                <div style="font-size:1.5rem; font-weight:700; margin-top:0.25rem;">
+                                    ${generateStarRating(rating.average_rating)}
+                                    <div style="font-size:0.85rem; color:var(--text-muted); margin-top:0.25rem;">${rating.average_rating}/5.00</div>
+                                </div>
+                            </div>
+                            <div class="summary-mini-card">
+                                <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase;">Priority Score</div>
+                                <div style="font-size:1.5rem; font-weight:700; color:var(--badge-critical-txt); margin-top:0.25rem;">${rating.priority_score}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom:1rem;">
+                            <div style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.5rem;">Representative Answer</div>
+                            <div style="color:var(--text-main); line-height:1.6; background:var(--panel-sub); padding:1rem; border-radius:8px;">
+                                ${escapeHtml(rating.representative_answer || 'No answer recorded')}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div style="font-size:0.8rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.75rem;">
+                                User Feedback (${feedbackList.length})
+                            </div>
+                            <div style="max-height:300px; overflow-y:auto;">
+                                ${feedbackHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+    </script>
+    <script src="theme.js"></script>
+</body>
+</html>

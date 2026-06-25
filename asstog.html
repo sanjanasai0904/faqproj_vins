@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VINS Assistant</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main chat container -->
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <h1>VINS Assistant</h1>
+        </div>
+
+        <!-- Message list area (scrollable) -->
+        <div class="message-list" id="messageList">
+            <!-- Initial bot message -->
+            <div class="message bot-message">
+                <div class="message-bubble">
+                    <div class="message-text">Hi! I'm your VINS FAQ assistant. Ask me anything about NOCs, ViBe, Spurti Points, or your internship.</div>
+                    <div class="message-timestamp" id="initialTimestamp"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input bar (fixed at bottom) -->
+        <div class="input-bar">
+            <input 
+                type="text" 
+                id="userInput" 
+                class="message-input" 
+                placeholder="Type your message..."
+                autocomplete="off"
+            >
+            <button id="sendButton" class="send-button">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Fuse.js for fuzzy search -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/7.0.0/fuse.min.js"></script>
+    
+    <!-- FAQ Search Module -->
+    <script src="faqSearch.js"></script>
+    
+    <!-- Main Script -->
+    <script src="script.js"></script>
+</body>
+</html>

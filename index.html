@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VINS Support Hub - Browse FAQs</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* FAQ Structural Core Layout */
+        .faq-layout-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        /* Sidebar Category Navigation Tracker */
+        .faq-sidebar-nav {
+            position: sticky;
+            top: 5rem;
+            align-self: start;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            max-height: calc(100vh - 7rem);
+            overflow-y: auto;
+        }
+
+        .sidebar-nav-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .category-anchor-link {
+            display: block;
+            padding: 0.6rem 0.75rem;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 6px;
+            margin-bottom: 0.25rem;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .category-anchor-link:hover {
+            background: var(--panel-sub);
+            color: var(--accent-color);
+        }
+
+        .category-anchor-link.anchor-active {
+            background: var(--accent-color);
+            color: white !important;
+        }
+
+        /* FAQ Global Controller Action Strip */
+        .faq-control-strip {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .control-action-btn {
+            background: var(--panel-sub);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.4rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .control-action-btn:hover {
+            background: var(--border-color);
+            border-color: var(--text-muted);
+        }
+
+        /* Accordion Structural Shell Components */
+        .category-matrix-block {
+            margin-bottom: 2.5rem;
+            scroll-margin-top: 5.5rem;
+        }
+
+        .category-matrix-title {
+            font-size: 1.25rem;
+            color: var(--accent-color);
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .faq-accordion-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            overflow: hidden;
+            transition: border-color 0.2s ease;
+        }
+
+        .faq-accordion-card:hover {
+            border-color: var(--text-muted);
+        }
+
+        .faq-accordion-trigger {
+            width: 100%;
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .faq-accordion-icon {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+            margin-left: 1rem;
+            flex-shrink: 0;
+        }
+
+        /* Essential for smooth JavaScript max-height manipulation */
+        .faq-accordion-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .faq-accordion-content {
+            padding: 0 1.25rem 1.25rem 1.25rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* Action bar elements inside the answer container */
+        .faq-action-row {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .save-item-btn {
+            background: var(--panel-sub);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .save-item-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        /* Open Layout Interactivity Override States */
+        .faq-accordion-card.is-expanded {
+            border-color: var(--accent-color);
+        }
+
+        .faq-accordion-card.is-expanded .faq-accordion-icon {
+            transform: rotate(180deg);
+            color: var(--accent-color);
+        }
+
+        @media (max-width: 900px) {
+            .faq-layout-grid {
+                grid-template-columns: 1fr;
+            }
+            .faq-sidebar-nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="global-nav">
+        <div class="nav-container">
+            <h2 class="nav-brand">🚀 VINS Support Hub</h2>
+            <div class="nav-right-block">
+                <div class="nav-links">
+                    <a href="intro.html">Getting Started</a>
+                    <a href="index.html" class="active">Browse FAQs</a>
+                    <a href="assistant.html">AI Assistant</a>
+                    <a href="saved.html">Saved Items</a>
+                    <a href="dashboard.html">Analytics</a>
+                    <a href="admin.html">Admin</a>
+                </div>
+                <div class="theme-toggle-wrapper">
+                    <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Theme"></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <header style="margin-bottom: 2rem;">
+            <h1 style="margin: 0 0 0.5rem 0;">Knowledge Base Index</h1>
+            <p style="color: var(--text-muted); margin: 0; font-size: 1.05rem;">Search and manage verified rules specifications across all active framework clusters.</p>
+        </header>
+
+        <div class="faq-layout-grid">
+            <aside class="faq-sidebar-nav" id="sidebarNavPanel">
+                <div class="sidebar-nav-title">Categories Framework</div>
+                <a href="#sec-about" class="category-anchor-link anchor-active" data-target-block="sec-about">1. About the Internship</a>
+                <a href="#sec-timing" class="category-anchor-link" data-target-block="sec-timing">2. Timing and Dates</a>
+                <a href="#sec-noc" class="category-anchor-link" data-target-block="sec-noc">3. NOC Requirements</a>
+                <a href="#sec-selection" class="category-anchor-link" data-target-block="sec-selection">4. Selection & Offers</a>
+                <a href="#sec-work" class="category-anchor-link" data-target-block="sec-work">5. Work & Mentorship</a>
+                <a href="#sec-conduct" class="category-anchor-link" data-target-block="sec-conduct">6. Code of Conduct</a>
+                <a href="#sec-interviews" class="category-anchor-link" data-target-block="sec-interviews">7. Interviews Related</a>
+                <a href="#sec-certificate" class="category-anchor-link" data-target-block="sec-certificate">8. Certificate Specs</a>
+                <a href="#sec-rosetta" class="category-anchor-link" data-target-block="sec-rosetta">9. Rosetta Journal</a>
+                <a href="#sec-phase1" class="category-anchor-link" data-target-block="sec-phase1">10. Phase 1 & ViBe LMS</a>
+                <a href="#sec-spurti" class="category-anchor-link" data-target-block="sec-spurti">11. Spurti Points</a>
+                <a href="#sec-yaksha" class="category-anchor-link" data-target-block="sec-yaksha">12. Yaksha Chat</a>
+                <a href="#sec-vibe-platform" class="category-anchor-link" data-target-block="sec-vibe-platform">13. ViBe Platform</a>
+                <a href="#sec-team" class="category-anchor-link" data-target-block="sec-team">14. Team Formation</a>
+            </aside>
+
+            <main>
+                <div class="faq-control-strip">
+                    <button class="control-action-btn" onclick="toggleAllAccordions(true)">↕️ Expand All</button>
+                    <button class="control-action-btn" onclick="toggleAllAccordions(false)">📭 Collapse All</button>
+                </div>
+
+                <div id="faqDynamicContainer">
+                    <!-- FAQ content will be dynamically loaded from faqs.json -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Category mapping for display labels, anchors, and order
+        const categoryMap = {
+            "About the internship": { label: "About the Internship", anchor: "sec-about", order: 1 },
+            "Timing and dates": { label: "Timing and Dates", anchor: "sec-timing", order: 2 },
+            "NOC (No Objection Certificate)": { label: "NOC Requirements", anchor: "sec-noc", order: 3 },
+            "Selection, offer letter, and certificate": { label: "Selection & Offers", anchor: "sec-selection", order: 4 },
+            "Work, mentorship, and projects": { label: "Work & Mentorship", anchor: "sec-work", order: 5 },
+            "Code of conduct — communication channels": { label: "Code of Conduct", anchor: "sec-conduct", order: 6 },
+            "Interviews Related": { label: "Interviews Related", anchor: "sec-interviews", order: 7 },
+            "Certificate": { label: "Certificate Specs", anchor: "sec-certificate", order: 8 },
+            "Rosetta — your internship journal": { label: "Rosetta Journal", anchor: "sec-rosetta", order: 9 },
+            "Phase 1 — coursework, Vibe LMS, and live sessions": { label: "Phase 1 & ViBe LMS", anchor: "sec-phase1", order: 10 },
+            "Spurti Points": { label: "Spurti Points", anchor: "sec-spurti", order: 11 },
+            "Yaksha Chat Related": { label: "Yaksha Chat", anchor: "sec-yaksha", order: 12 },
+            "ViBe Platform": { label: "ViBe Platform", anchor: "sec-vibe-platform", order: 13 },
+            "Team Formation": { label: "Team Formation", anchor: "sec-team", order: 14 }
+        };
+
+        // Fetch and render FAQs dynamically
+        async function loadAndRenderFAQs() {
+            try {
+                const response = await fetch('http://localhost:5000/api/faqs');
+                const result = await response.json();
+                const faqs = result.data; // backend wraps FAQs in { success: true, data: [...] }
+                
+                // Group FAQs by category
+                const groupedFAQs = {};
+                faqs.forEach(faq => {
+                    if (!groupedFAQs[faq.category]) {
+                        groupedFAQs[faq.category] = [];
+                    }
+                    groupedFAQs[faq.category].push(faq);
+                });
+
+                // Sort categories by order from categoryMap
+                const sortedCategories = Object.keys(groupedFAQs).sort((a, b) => {
+                    const orderA = categoryMap[a]?.order || 999;
+                    const orderB = categoryMap[b]?.order || 999;
+                    return orderA - orderB;
+                });
+
+                // Generate HTML for all categories
+                let htmlContent = '';
+                sortedCategories.forEach(category => {
+                    const categoryInfo = categoryMap[category];
+                    if (!categoryInfo) return; // Skip unmapped categories
+
+                    const categoryFAQs = groupedFAQs[category];
+                    const { label, anchor, order } = categoryInfo;
+
+                    // Start section
+                    htmlContent += `<section id="${anchor}" class="category-matrix-block">`;
+                    htmlContent += `<h3 class="category-matrix-title">${order}. ${label}</h3>`;
+
+                    // Add each FAQ in this category
+                    categoryFAQs.forEach((faq, index) => {
+                        const faqNumber = `${order}.${index + 1}`;
+                        const escapedQuestion = escapeHtml(faq.question);
+                        const escapedAnswer = escapeHtml(faq.answer);
+                        
+                        htmlContent += `
+                        <div class="faq-accordion-card">
+                            <button class="faq-accordion-trigger" aria-expanded="false" onclick="toggleAccordionItem(this)">
+                                <span>${faqNumber} ${escapedQuestion}</span>
+                                <span class="faq-accordion-icon">▼</span>
+                            </button>
+                            <div class="faq-accordion-panel">
+                                <div class="faq-accordion-content">
+                                    <p style="margin:0 0 1rem 0;">${escapedAnswer}</p>
+                                    <div class="faq-action-row">
+                                        <button class="save-item-btn" onclick="toggleSaveItem('faq-${faq.id}', '${escapedQuestion.replace(/'/g, "\\'")}', '${escapedAnswer.replace(/'/g, "\\'")}', this)">🤍 Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+
+                    htmlContent += `</section>`;
+                });
+
+                // Inject into container
+                document.getElementById('faqDynamicContainer').innerHTML = htmlContent;
+                
+                // Re-initialize after dynamic content is loaded
+                syncSaveButtonUIStates();
+                initializeSidebarObserver();
+                
+            } catch (error) {
+                console.error('Error loading FAQs:', error);
+                document.getElementById('faqDynamicContainer').innerHTML = 
+                    '<p style="color: red; padding: 2rem;">Failed to load FAQ content. Please refresh the page.</p>';
+            }
+        }
+
+        // Helper function to escape HTML special characters
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadAndRenderFAQs();
+        });
+
+        // 1. Accordion Control Logic 
+        function toggleAccordionItem(triggerBtn, explicitState = null) {
+            const card = triggerBtn.closest(".faq-accordion-card");
+            const panel = card.querySelector(".faq-accordion-panel");
+            
+            const isExpanding = explicitState !== null ? explicitState : !card.classList.contains("is-expanded");
+
+            if (isExpanding) {
+                card.classList.add("is-expanded");
+                triggerBtn.setAttribute("aria-expanded", "true");
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            } else {
+                card.classList.remove("is-expanded");
+                triggerBtn.setAttribute("aria-expanded", "false");
+                panel.style.maxHeight = "0";
+            }
+        }
+
+        // 2. Global Control Action Engine (Expand All / Collapse All)
+        function toggleAllAccordions(shouldExpand) {
+            const triggers = document.querySelectorAll(".faq-accordion-trigger");
+            triggers.forEach(trigger => {
+                toggleAccordionItem(trigger, shouldExpand);
+            });
+        }
+
+        // 3. The Original, Clean Save/Unsave Sync Feature Engine
+        function toggleSaveItem(id, question, answer, buttonElement) {
+            let savedItems = JSON.parse(localStorage.getItem("vins_pinned_faqs")) || [];
+            const existingIndex = savedItems.findIndex(item => item.id === id);
+
+            if (existingIndex > -1) {
+                // Item exists, remove it (Unsave)
+                savedItems.splice(existingIndex, 1);
+                buttonElement.textContent = "🤍 Save";
+            } else {
+                // Item does not exist, add it (Save)
+                savedItems.push({ id: id, q: question, a: answer });
+                buttonElement.textContent = "❤️ Unsave";
+            }
+
+            localStorage.setItem("vins_pinned_faqs", JSON.stringify(savedItems));
+        }
+
+        // Syncs the UI on page load to match whatever is currently stored inside savedItems registry
+        function syncSaveButtonUIStates() {
+            const savedItems = JSON.parse(localStorage.getItem("vins_pinned_faqs")) || [];
+            const buttons = document.querySelectorAll(".save-item-btn");
+
+            buttons.forEach(btn => {
+                // Read arguments passed into the button inline string setup safely
+                const onClickAttr = btn.getAttribute("onclick");
+                if (!onClickAttr) return;
+
+                // Simple check if the unique item ID string is present within our global tracker array
+                savedItems.forEach(savedItem => {
+                    if (onClickAttr.includes(`'${savedItem.id}'`)) {
+                        btn.textContent = "❤️ Unsave";
+                    }
+                });
+            });
+        }
+
+        // 4. Dynamic Intersection Observer for Sidebar Links Synchronization
+        function initializeSidebarObserver() {
+            const sections = document.querySelectorAll(".category-matrix-block");
+            const anchors = document.querySelectorAll(".category-anchor-link");
+
+            const observerOptions = {
+                root: null,
+                rootMargin: "-20% 0px -60% 0px", 
+                threshold: 0
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        anchors.forEach(a => {
+                            if (a.getAttribute("data-target-block") === entry.target.id) {
+                                a.classList.add("anchor-active");
+                            } else {
+                                a.classList.remove("anchor-active");
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(sec => observer.observe(sec));
+        }
+    </script>
+    <script src="theme.js"></script>
+</body>
+</html>

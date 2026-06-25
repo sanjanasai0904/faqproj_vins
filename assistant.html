@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VINS Portal - AI Assistant</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .chat-layout { 
+            height: calc(100vh - 180px); 
+            display: flex; 
+            flex-direction: column; 
+            background: var(--card-bg); 
+            border: 1px solid var(--border-color); 
+            border-radius: 16px; 
+            overflow: hidden; 
+            margin-top: 1rem;
+        }
+        .chat-display { 
+            flex: 1; 
+            padding: 1.5rem; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 1rem; 
+        }
+        .chat-bubble { 
+            max-width: 75%; 
+            padding: 0.85rem 1.25rem; 
+            border-radius: 12px; 
+            font-size: 0.95rem; 
+            line-height: 1.5;
+        }
+        .chat-bubble.bot { 
+            background: var(--panel-sub); 
+            color: var(--text-main); 
+            align-self: flex-start; 
+            border-left: 4px solid var(--accent-color); 
+        }
+        .chat-bubble.user { 
+            background: var(--accent-color); 
+            color: #ffffff; 
+            align-self: flex-end; 
+        }
+        .chat-entry-bar { 
+            display: flex; 
+            padding: 1rem; 
+            background: var(--panel-sub); 
+            border-top: 1px solid var(--border-color); 
+            gap: 0.75rem; 
+        }
+        .chat-entry-bar input { 
+            flex: 1; 
+            padding: 0.75rem; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            font-size: 0.95rem;
+            outline: none;
+        }
+        .chat-entry-bar input:focus { border-color: var(--accent-color); }
+        .chat-entry-bar button { 
+            padding: 0.75rem 1.5rem; 
+            background: var(--accent-color); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            cursor: pointer; 
+        }
+        .chat-entry-bar button:hover { background: var(--accent-hover); }
+        .chat-entry-bar button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .typing-indicator {
+            display: inline-block;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin: 0 2px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.7; }
+            30% { transform: translateY(-10px); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="global-nav">
+        <div class="nav-container">
+            <h2 class="nav-brand">🚀 VINS Support Hub</h2>
+            <div class="nav-right-block">
+                <div class="nav-links">
+                    <a href="intro.html">Getting Started</a>
+                    <a href="index.html">Browse FAQs</a>
+                    <a href="assistant.html" class="active">AI Assistant</a>
+                    <a href="saved.html">Saved Items</a>
+                    <a href="dashboard.html">Analytics</a>
+                    <a href="admin.html">Admin</a>
+                </div>
+                <div class="theme-toggle-wrapper">
+                    <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Theme"></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <h2>Context-Trained Support Engine</h2>
+        <div class="chat-layout">
+            <div id="chatDisplay" class="chat-display">
+                <div class="chat-bubble bot">Hello! I am your context-trained VINS Help Desk intelligence agent. Ask me anything about rules, timelines, Spurti Points, NOC procedures, or Rosetta journals.</div>
+            </div>
+            <div class="chat-entry-bar">
+                <input type="text" id="chatInput" placeholder="Type your internship question here...">
+                <button id="sendBtn" onclick="handleUserMessage()">Ask AI</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Conversation history for multi-turn context
+        let conversationHistory = [];
+        
+        // Backend API endpoints
+        const CHAT_API_URL = 'http://localhost:5000/api/chat';
+        const RATING_API_URL = 'http://localhost:5000/api/rating';
+
+        // Store bot responses for rating
+        const botResponses = new Map(); // Map of response element ID to {question, answer}
+
+        async function handleUserMessage() {
+            const inputEl = document.getElementById("chatInput");
+            const displayEl = document.getElementById("chatDisplay");
+            const sendBtn = document.getElementById("sendBtn");
+            const text = inputEl.value.trim();
+            
+            if (!text) return;
+
+            // Render User Bubble
+            const userBubble = document.createElement("div");
+            userBubble.className = "chat-bubble user";
+            userBubble.textContent = text;
+            displayEl.appendChild(userBubble);
+            inputEl.value = "";
+            displayEl.scrollTop = displayEl.scrollHeight;
+
+            // Disable input while processing
+            inputEl.disabled = true;
+            sendBtn.disabled = true;
+
+            // Show typing indicator
+            const typingBubble = document.createElement("div");
+            typingBubble.className = "chat-bubble bot";
+            typingBubble.id = "typingIndicator";
+            typingBubble.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+            displayEl.appendChild(typingBubble);
+            displayEl.scrollTop = displayEl.scrollHeight;
+
+            try {
+                // Call backend API
+                const response = await fetch(CHAT_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        conversationHistory: conversationHistory,
+                        message: text
+                    })
+                });
+
+                // Remove typing indicator
+                const typingEl = document.getElementById("typingIndicator");
+                if (typingEl) typingEl.remove();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update conversation history
+                    conversationHistory = data.updatedHistory;
+
+                    // Create unique ID for this response
+                    const responseId = `bot-response-${Date.now()}`;
+
+                    // Store question and answer for rating
+                    botResponses.set(responseId, {
+                        question: data.question || text,
+                        answer: data.answer || data.reply
+                    });
+
+                    // Render bot response with rating widget
+                    const responseContainer = document.createElement("div");
+                    responseContainer.id = responseId;
+                    responseContainer.style.alignSelf = "flex-start";
+                    responseContainer.style.maxWidth = "75%";
+                    
+                    const botBubble = document.createElement("div");
+                    botBubble.className = "chat-bubble bot";
+                    botBubble.textContent = data.reply;
+                    
+                    // Create star rating widget
+                    const ratingWidget = createStarRatingWidget(responseId);
+                    
+                    responseContainer.appendChild(botBubble);
+                    responseContainer.appendChild(ratingWidget);
+                    
+                    displayEl.appendChild(responseContainer);
+                    displayEl.scrollTop = displayEl.scrollHeight;
+
+                    console.log('✅ AI response received successfully');
+                } else {
+                    throw new Error(data.message || 'Failed to get response');
+                }
+
+            } catch (error) {
+                console.error('❌ Error communicating with AI:', error);
+
+                // Remove typing indicator if still present
+                const typingEl = document.getElementById("typingIndicator");
+                if (typingEl) typingEl.remove();
+
+                // Show error message to user
+                const errorBubble = document.createElement("div");
+                errorBubble.className = "chat-bubble bot";
+                errorBubble.textContent = "Sorry, I'm having trouble connecting right now. Please try again.";
+                displayEl.appendChild(errorBubble);
+                displayEl.scrollTop = displayEl.scrollHeight;
+            } finally {
+                // Re-enable input
+                inputEl.disabled = false;
+                sendBtn.disabled = false;
+                inputEl.focus();
+            }
+        }
+
+        // Create star rating widget
+        function createStarRatingWidget(responseId) {
+            const widget = document.createElement("div");
+            widget.className = "star-rating-widget";
+            widget.style.marginTop = "0.5rem";
+            widget.style.padding = "0.5rem";
+            widget.style.background = "var(--panel-sub)";
+            widget.style.borderRadius = "8px";
+            widget.style.border = "1px solid var(--border-color)";
+            
+            const label = document.createElement("div");
+            label.textContent = "Rate this response:";
+            label.style.fontSize = "0.8rem";
+            label.style.color = "var(--text-muted)";
+            label.style.marginBottom = "0.5rem";
+            
+            const starsContainer = document.createElement("div");
+            starsContainer.className = "stars-container";
+            starsContainer.style.display = "flex";
+            starsContainer.style.gap = "0.25rem";
+            
+            // Create 5 stars
+            for (let i = 1; i <= 5; i++) {
+                const star = document.createElement("span");
+                star.className = "star-icon";
+                star.textContent = "☆";
+                star.style.fontSize = "1.5rem";
+                star.style.cursor = "pointer";
+                star.style.color = "var(--text-muted)";
+                star.style.transition = "color 0.2s ease, transform 0.2s ease";
+                star.dataset.rating = i;
+                star.dataset.responseId = responseId;
+                
+                // Hover effects
+                star.addEventListener("mouseenter", () => {
+                    highlightStars(starsContainer, i);
+                });
+                
+                star.addEventListener("mouseleave", () => {
+                    resetStars(starsContainer);
+                });
+                
+                // Click handler
+                star.addEventListener("click", () => {
+                    handleStarClick(responseId, i, widget);
+                });
+                
+                starsContainer.appendChild(star);
+            }
+            
+            widget.appendChild(label);
+            widget.appendChild(starsContainer);
+            
+            return widget;
+        }
+
+        // Highlight stars on hover
+        function highlightStars(container, rating) {
+            const stars = container.querySelectorAll(".star-icon");
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.textContent = "★";
+                    star.style.color = "#fbbf24"; // Yellow color
+                    star.style.transform = "scale(1.1)";
+                } else {
+                    star.textContent = "☆";
+                    star.style.color = "var(--text-muted)";
+                    star.style.transform = "scale(1)";
+                }
+            });
+        }
+
+        // Reset stars to default
+        function resetStars(container) {
+            const stars = container.querySelectorAll(".star-icon");
+            stars.forEach(star => {
+                star.textContent = "☆";
+                star.style.color = "var(--text-muted)";
+                star.style.transform = "scale(1)";
+            });
+        }
+
+        // Handle star click - submit rating
+        async function handleStarClick(responseId, rating, widget) {
+            const responseData = botResponses.get(responseId);
+            if (!responseData) {
+                console.error("Response data not found for", responseId);
+                return;
+            }
+
+            // Disable all stars
+            const stars = widget.querySelectorAll(".star-icon");
+            stars.forEach(star => {
+                star.style.pointerEvents = "none";
+                const starRating = parseInt(star.dataset.rating);
+                if (starRating <= rating) {
+                    star.textContent = "★";
+                    star.style.color = "#fbbf24";
+                } else {
+                    star.textContent = "☆";
+                    star.style.color = "var(--text-muted)";
+                }
+            });
+
+            console.log(`⭐ Submitting ${rating} star rating...`);
+
+            try {
+                // Submit rating to backend
+                const response = await fetch(RATING_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        question: responseData.question,
+                        answer: responseData.answer,
+                        rating: rating
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log('✅ Rating submitted successfully');
+                    
+                    // Show feedback input option
+                    showFeedbackInput(responseId, widget, data.logId);
+                } else {
+                    throw new Error(data.message || 'Failed to submit rating');
+                }
+
+            } catch (error) {
+                console.error('❌ Error submitting rating:', error);
+                alert('Failed to submit rating. Please try again.');
+                
+                // Re-enable stars
+                stars.forEach(star => {
+                    star.style.pointerEvents = "auto";
+                });
+            }
+        }
+
+        // Show optional feedback input
+        function showFeedbackInput(responseId, widget, logId) {
+            // Remove the rating label and stars
+            widget.innerHTML = '';
+            
+            const feedbackLabel = document.createElement("div");
+            feedbackLabel.textContent = "Thank you! Anything you'd like to add? (optional)";
+            feedbackLabel.style.fontSize = "0.85rem";
+            feedbackLabel.style.color = "var(--text-main)";
+            feedbackLabel.style.marginBottom = "0.5rem";
+            feedbackLabel.style.fontWeight = "600";
+            
+            const feedbackInput = document.createElement("textarea");
+            feedbackInput.placeholder = "Share your thoughts...";
+            feedbackInput.style.width = "100%";
+            feedbackInput.style.padding = "0.5rem";
+            feedbackInput.style.borderRadius = "6px";
+            feedbackInput.style.border = "1px solid var(--border-color)";
+            feedbackInput.style.background = "var(--bg-main)";
+            feedbackInput.style.color = "var(--text-main)";
+            feedbackInput.style.fontSize = "0.9rem";
+            feedbackInput.style.resize = "vertical";
+            feedbackInput.style.minHeight = "60px";
+            feedbackInput.style.marginBottom = "0.5rem";
+            feedbackInput.style.fontFamily = "inherit";
+            
+            const buttonsContainer = document.createElement("div");
+            buttonsContainer.style.display = "flex";
+            buttonsContainer.style.gap = "0.5rem";
+            
+            const submitBtn = document.createElement("button");
+            submitBtn.textContent = "Submit";
+            submitBtn.style.flex = "1";
+            submitBtn.style.padding = "0.5rem";
+            submitBtn.style.background = "var(--accent-color)";
+            submitBtn.style.color = "white";
+            submitBtn.style.border = "none";
+            submitBtn.style.borderRadius = "6px";
+            submitBtn.style.fontWeight = "600";
+            submitBtn.style.cursor = "pointer";
+            submitBtn.style.fontSize = "0.85rem";
+            
+            const skipBtn = document.createElement("button");
+            skipBtn.textContent = "Skip";
+            skipBtn.style.flex = "1";
+            skipBtn.style.padding = "0.5rem";
+            skipBtn.style.background = "transparent";
+            skipBtn.style.color = "var(--text-muted)";
+            skipBtn.style.border = "1px solid var(--border-color)";
+            skipBtn.style.borderRadius = "6px";
+            skipBtn.style.fontWeight = "600";
+            skipBtn.style.cursor = "pointer";
+            skipBtn.style.fontSize = "0.85rem";
+            
+            submitBtn.addEventListener("click", async () => {
+                const feedbackText = feedbackInput.value.trim();
+                if (feedbackText) {
+                    await submitFeedbackText(logId, feedbackText);
+                }
+                widget.remove();
+            });
+            
+            skipBtn.addEventListener("click", () => {
+                widget.remove();
+            });
+            
+            buttonsContainer.appendChild(submitBtn);
+            buttonsContainer.appendChild(skipBtn);
+            
+            widget.appendChild(feedbackLabel);
+            widget.appendChild(feedbackInput);
+            widget.appendChild(buttonsContainer);
+            
+            feedbackInput.focus();
+        }
+
+        // Submit feedback text
+        async function submitFeedbackText(logId, feedbackText) {
+            try {
+                console.log('📝 Submitting feedback text...');
+                
+                const response = await fetch(`${RATING_API_URL}/feedback`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        logId: logId,
+                        feedbackText: feedbackText
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log('✅ Feedback text submitted successfully');
+                } else {
+                    throw new Error(data.message || 'Failed to submit feedback text');
+                }
+
+            } catch (error) {
+                console.error('❌ Error submitting feedback text:', error);
+            }
+        }
+
+        // Handle Enter key press
+        document.getElementById("chatInput").addEventListener("keypress", function(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleUserMessage();
+            }
+        });
+    </script>
+    <script src="theme.js"></script>
+</body>
+</html>
